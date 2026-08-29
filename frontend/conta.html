@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ — Minha conta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="index.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="atacado.html" class="nav-link-secundario">Comprar no atacado</a>
+      <a href="carrinho.html" class="carrinho-link">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="container secao">
+  <h1>Minha conta</h1>
+  <div class="conta-layout">
+    <ul class="conta-menu">
+      <li><a href="#perfil" class="ativo" data-aba="perfil">Meus dados</a></li>
+      <li><a href="#pedidos" data-aba="pedidos">Meus pedidos</a></li>
+      <li><button type="button" class="link-sair" id="btn-sair-cliente">Sair</button></li>
+    </ul>
+
+    <div>
+      <div id="aba-perfil">
+        <div class="resumo-pedido">
+          <h3>Meus dados</h3>
+          <div id="alerta-perfil"></div>
+          <form id="form-perfil">
+            <div class="campo">
+              <label for="p_nome">Nome completo</label>
+              <input type="text" id="p_nome" required>
+            </div>
+            <div class="campo">
+              <label for="p_telefone">Telefone / WhatsApp</label>
+              <input type="tel" id="p_telefone">
+            </div>
+            <h3 style="margin-top:24px;">Endereço padrão de entrega</h3>
+            <p class="texto-suave" style="font-size:0.85rem;">Esse endereço vem pré-preenchido no checkout — você ainda pode alterá-lo na hora da compra se precisar.</p>
+            <div class="campo">
+              <label for="p_cep">CEP</label>
+              <input type="text" id="p_cep" placeholder="00000-000">
+            </div>
+            <div class="campo-linha">
+              <div class="campo">
+                <label for="p_rua">Rua</label>
+                <input type="text" id="p_rua">
+              </div>
+              <div class="campo">
+                <label for="p_numero">Número</label>
+                <input type="text" id="p_numero">
+              </div>
+            </div>
+            <div class="campo-linha">
+              <div class="campo">
+                <label for="p_bairro">Bairro</label>
+                <input type="text" id="p_bairro">
+              </div>
+              <div class="campo">
+                <label for="p_cidade">Cidade</label>
+                <input type="text" id="p_cidade">
+              </div>
+            </div>
+            <div class="campo">
+              <label for="p_estado">Estado</label>
+              <select id="p_estado">
+                <option value="">Selecione</option>
+                <option value="AC">Acre</option><option value="AL">Alagoas</option>
+                <option value="AP">Amapá</option><option value="AM">Amazonas</option>
+                <option value="BA">Bahia</option><option value="CE">Ceará</option>
+                <option value="DF">Distrito Federal</option><option value="ES">Espírito Santo</option>
+                <option value="GO">Goiás</option><option value="MA">Maranhão</option>
+                <option value="MT">Mato Grosso</option><option value="MS">Mato Grosso do Sul</option>
+                <option value="MG">Minas Gerais</option><option value="PA">Pará</option>
+                <option value="PB">Paraíba</option><option value="PR">Paraná</option>
+                <option value="PE">Pernambuco</option><option value="PI">Piauí</option>
+                <option value="RJ">Rio de Janeiro</option><option value="RN">Rio Grande do Norte</option>
+                <option value="RS">Rio Grande do Sul</option><option value="RO">Rondônia</option>
+                <option value="RR">Roraima</option><option value="SC">Santa Catarina</option>
+                <option value="SP">São Paulo</option><option value="SE">Sergipe</option>
+                <option value="TO">Tocantins</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primario btn-grande" id="btn-salvar-perfil">Salvar alterações</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="aba-pedidos" style="display:none;">
+        <div class="admin-painel">
+          <div class="admin-painel__cabecalho"><h3 style="margin:0;">Meus pedidos</h3></div>
+          <div style="overflow-x:auto;">
+            <table class="tabela-admin">
+              <thead><tr><th>Nº do pedido</th><th>Data</th><th>Tipo</th><th>Total</th><th>Status</th></tr></thead>
+              <tbody id="tabela-meus-pedidos"><tr><td colspan="5">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container site-footer__grade">
+    <div class="site-footer__coluna">
+      <div class="site-footer__marca">
+        <img src="assets/logo.png" alt="Logo FERRAZ">
+        <span>FERRAZ</span>
+      </div>
+      <p class="texto-suave">Moda atemporal, feita para durar. Peças de alfaiataria e conjuntos para o seu dia a dia, no varejo ou no atacado.</p>
+      <div class="site-footer__social">
+        <a href="https://wa.me/558196336445" target="_blank" rel="noopener" aria-label="WhatsApp">WhatsApp</a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>
+      </div>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Institucional</h4>
+      <ul>
+        <li><a href="index.html">Loja (varejo)</a></li>
+        <li><a href="atacado.html">Loja (atacado)</a></li>
+        <li><a href="conta.html">Minha conta</a></li>
+        <li><a href="carrinho.html">Meu carrinho</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Categorias</h4>
+      <ul id="footer-categorias">
+        <li><a href="index.html">Ver todas as peças</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Fale com a gente</h4>
+      <ul class="site-footer__contato">
+        <li><a href="https://wa.me/558196336445" target="_blank" rel="noopener">WhatsApp: (81) 9633-6445</a></li>
+        <li><a href="mailto:Ferrazcollection@icloud.com">E-mail: Ferrazcollection@icloud.com</a></li>
+        <li>Seg. a Sex., 9h às 18h</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="site-footer__barra">
+    <div class="container site-footer__barra-conteudo">
+      <p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p>
+      <p class="texto-suave" style="font-size:0.82rem;">Pagamento processado com segurança via Mercado Pago — Pix, cartão e boleto.</p>
+    </div>
+  </div>
+</footer>
+
+<link rel="stylesheet" href="admin/css/admin.css">
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/customer.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+exigirLoginCliente();
+
+document.getElementById('btn-sair-cliente').addEventListener('click', logoutCliente);
+
+// Alternância simples entre as abas "Meus dados" e "Meus pedidos"
+document.querySelectorAll('.conta-menu a[data-aba]').forEach((link) => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.conta-menu a[data-aba]').forEach((l) => l.classList.remove('ativo'));
+    link.classList.add('ativo');
+    document.getElementById('aba-perfil').style.display = link.dataset.aba === 'perfil' ? 'block' : 'none';
+    document.getElementById('aba-pedidos').style.display = link.dataset.aba === 'pedidos' ? 'block' : 'none';
+    if (link.dataset.aba === 'pedidos') carregarMeusPedidos();
+  });
+});
+
+async function carregarPerfil() {
+  try {
+    const perfil = await apiFetchCliente('/clientes/perfil');
+    document.getElementById('p_nome').value = perfil.nome || '';
+    document.getElementById('p_telefone').value = perfil.telefone || '';
+    document.getElementById('p_cep').value = perfil.endereco_cep || '';
+    document.getElementById('p_rua').value = perfil.endereco_rua || '';
+    document.getElementById('p_numero').value = perfil.endereco_numero || '';
+    document.getElementById('p_bairro').value = perfil.endereco_bairro || '';
+    document.getElementById('p_cidade').value = perfil.endereco_cidade || '';
+    document.getElementById('p_estado').value = perfil.endereco_estado || '';
+  } catch (err) {
+    document.getElementById('alerta-perfil').innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById('form-perfil').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertaEl = document.getElementById('alerta-perfil');
+  const btn = document.getElementById('btn-salvar-perfil');
+  btn.disabled = true;
+  try {
+    await apiFetchCliente('/clientes/perfil', {
+      method: 'PUT',
+      body: JSON.stringify({
+        nome: document.getElementById('p_nome').value,
+        telefone: document.getElementById('p_telefone').value,
+        endereco_cep: document.getElementById('p_cep').value,
+        endereco_rua: document.getElementById('p_rua').value,
+        endereco_numero: document.getElementById('p_numero').value,
+        endereco_bairro: document.getElementById('p_bairro').value,
+        endereco_cidade: document.getElementById('p_cidade').value,
+        endereco_estado: document.getElementById('p_estado').value,
+      }),
+    });
+    alertaEl.innerHTML = `<div class="alerta alerta-sucesso">Dados salvos com sucesso!</div>`;
+    // Atualiza o nome salvo localmente (usado no "Olá, Fulano" do cabeçalho)
+    const clienteAtual = obterClienteLogado();
+    salvarSessaoCliente(obterTokenCliente(), { ...clienteAtual, nome: document.getElementById('p_nome').value });
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function formatarData(dataStr) {
+  return new Date(dataStr).toLocaleDateString('pt-BR');
+}
+
+async function carregarMeusPedidos() {
+  const tbody = document.getElementById('tabela-meus-pedidos');
+  try {
+    const pedidos = await apiFetchCliente('/clientes/meus-pedidos');
+    if (pedidos.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5">Você ainda não fez nenhum pedido.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = pedidos.map((p) => `
+      <tr>
+        <td>${escapeHtml(p.numero_pedido)}</td>
+        <td>${formatarData(p.criado_em)}</td>
+        <td>${p.tipo_pedido === 'atacado' ? 'Atacado' : 'Varejo'}</td>
+        <td>${formatarPreco(p.total)}</td>
+        <td><span class="badge badge-${p.status}">${escapeHtml(p.status)}</span></td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+carregarPerfil();
+</script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ — Detalhes do produto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="index.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="atacado.html" class="nav-link-secundario" id="link-atacado">Comprar no atacado</a>
+      <a href="conta.html" class="nav-link-secundario" id="link-conta">Entrar</a>
+      <a href="carrinho.html" class="carrinho-link" id="link-carrinho">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="container secao">
+  <p><a href="index.html" id="link-voltar">&larr; Voltar para o catálogo</a></p>
+  <div id="conteudo-produto">
+    <p class="carregando">Carregando produto...</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container site-footer__grade">
+    <div class="site-footer__coluna">
+      <div class="site-footer__marca">
+        <img src="assets/logo.png" alt="Logo FERRAZ">
+        <span>FERRAZ</span>
+      </div>
+      <p class="texto-suave">Moda atemporal, feita para durar. Peças de alfaiataria e conjuntos para o seu dia a dia, no varejo ou no atacado.</p>
+      <div class="site-footer__social">
+        <a href="https://wa.me/558196336445" target="_blank" rel="noopener" aria-label="WhatsApp">WhatsApp</a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>
+      </div>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Institucional</h4>
+      <ul>
+        <li><a href="index.html">Loja (varejo)</a></li>
+        <li><a href="atacado.html">Loja (atacado)</a></li>
+        <li><a href="conta.html">Minha conta</a></li>
+        <li><a href="carrinho.html">Meu carrinho</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Categorias</h4>
+      <ul id="footer-categorias">
+        <li><a href="index.html">Ver todas as peças</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Fale com a gente</h4>
+      <ul class="site-footer__contato">
+        <li><a href="https://wa.me/558196336445" target="_blank" rel="noopener">WhatsApp: (81) 9633-6445</a></li>
+        <li><a href="mailto:Ferrazcollection@icloud.com">E-mail: Ferrazcollection@icloud.com</a></li>
+        <li>Seg. a Sex., 9h às 18h</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="site-footer__barra">
+    <div class="container site-footer__barra-conteudo">
+      <p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p>
+      <p class="texto-suave" style="font-size:0.82rem;">Pagamento processado com segurança via Mercado Pago — Pix, cartão e boleto.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/customer.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+atualizarLinkConta('link-conta');
+
+const params = new URLSearchParams(window.location.search);
+const produtoId = params.get('id');
+const modo = params.get('modo') === 'atacado' ? 'atacado' : 'varejo';
+document.body.dataset.modoCarrinho = modo;
+
+if (modo === 'atacado') {
+  document.getElementById('link-atacado').textContent = 'Comprar no varejo';
+  document.getElementById('link-atacado').href = 'index.html';
+  document.getElementById('link-voltar').textContent = '← Voltar para o catálogo de atacado';
+  document.getElementById('link-voltar').href = 'atacado.html';
+  document.getElementById('link-carrinho').href = 'carrinho.html?modo=atacado';
+}
+
+let produtoAtual = null;
+let galeriaAtual = [];
+let indiceFotoAtual = 0;
+let corSelecionada = null;
+let tamanhoSelecionado = null;
+
+function montarAvisoAtacado(produto) {
+  if (!produto.preco_atacado) return '';
+  if (modo === 'atacado') {
+    return `
+      <div class="aviso-atacado">
+        Preço de atacado já aplicado nesta página. Pedido mínimo de 12 peças no total (pode misturar modelos).
+      </div>
+    `;
+  }
+  return `
+    <div class="aviso-atacado">
+      No atacado, a partir de ${produto.quantidade_minima_atacado} peças, há
+      ${Number(produto.desconto_atacado_percentual)}% de desconto —
+      preço por peça de ${formatarPreco(produto.preco_atacado)}.
+      <a href="atacado.html">Ver na página de atacado →</a>
+    </div>
+  `;
+}
+
+function trocarFotoPrincipal(indice) {
+  indiceFotoAtual = indice;
+  const principal = document.getElementById('foto-principal');
+  if (principal) principal.src = `${BACKEND_ORIGIN}${galeriaAtual[indice]}`;
+  document.querySelectorAll('.produto-detalhe__miniaturas button').forEach((btn, i) => {
+    btn.classList.toggle('ativa', i === indice);
+  });
+}
+
+// Troca a galeria exibida para as fotos da cor escolhida. Se aquela cor
+// não tiver fotos próprias cadastradas, cai de volta pras fotos gerais.
+function renderizarGaleriaComCor(produto, corId) {
+  const cor = (produto.cores || []).find((c) => c.id === corId);
+  const galeriaCor = cor && cor.galeria.length > 0 ? cor.galeria : produto.galeria;
+  galeriaAtual = galeriaCor.length > 0 ? galeriaCor : produto.galeria;
+  indiceFotoAtual = 0;
+
+  const galeriaEl = document.getElementById('galeria-produto');
+  if (galeriaEl) galeriaEl.outerHTML = montarGaleria(produto);
+
+  document.querySelectorAll('.produto-detalhe__miniaturas button').forEach((btn) => {
+    btn.addEventListener('click', () => trocarFotoPrincipal(Number(btn.dataset.indice)));
+  });
+}
+
+function montarSeletorCores(produto) {
+  if (!produto.cores || produto.cores.length === 0) return '';
+  return `
+    <div class="campo">
+      <label>Cor${corSelecionada ? `: ${escapeHtml((produto.cores.find(c => c.id === corSelecionada) || {}).nome || '')}` : ''}</label>
+      <div class="seletor-cores">
+        ${produto.cores.map((c) => `
+          <button type="button" class="seletor-cores__bolinha ${c.id === corSelecionada ? 'ativa' : ''}"
+                  data-cor-id="${c.id}" title="${escapeHtml(c.nome)}"
+                  style="background:${escapeHtml(c.codigo_hex || '#ccc')}">
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function montarSeletorTamanhos(produto) {
+  if (!produto.tamanhos || produto.tamanhos.length === 0) return '';
+  return `
+    <div class="campo">
+      <label>Tamanho${tamanhoSelecionado ? `: ${escapeHtml(tamanhoSelecionado)}` : ''}</label>
+      <div class="seletor-tamanhos">
+        ${produto.tamanhos.map((t) => `
+          <button type="button" class="seletor-tamanhos__pill ${t.tamanho === tamanhoSelecionado ? 'ativa' : ''}"
+                  data-tamanho="${escapeHtml(t.tamanho)}">
+            ${escapeHtml(t.tamanho)}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function montarGaleria(produto) {
+  if (galeriaAtual.length === 0) {
+    return `<div class="produto-detalhe__imagem" id="galeria-produto"><div class="produto-card__placeholder">Foto em breve</div></div>`;
+  }
+
+  const miniaturas = galeriaAtual.map((url, i) => `
+    <button type="button" class="${i === indiceFotoAtual ? 'ativa' : ''}" data-indice="${i}">
+      <img src="${BACKEND_ORIGIN}${url}" alt="Foto ${i + 1} de ${escapeHtml(produto.nome)}">
+    </button>
+  `).join('');
+
+  return `
+    <div class="produto-detalhe__galeria" id="galeria-produto">
+      <div class="produto-detalhe__imagem">
+        <img id="foto-principal" src="${BACKEND_ORIGIN}${galeriaAtual[indiceFotoAtual]}" alt="${escapeHtml(produto.nome)}">
+      </div>
+      ${galeriaAtual.length > 1 ? `<div class="produto-detalhe__miniaturas">${miniaturas}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderizarProduto(produto) {
+  const precoInicial = modo === 'atacado' && produto.preco_atacado ? produto.preco_atacado : produto.preco_varejo;
+  const quantidadeInicial = modo === 'atacado' ? 12 : 1;
+  galeriaAtual = produto.galeria && produto.galeria.length > 0 ? produto.galeria : [];
+
+  document.getElementById('conteudo-produto').innerHTML = `
+    <div class="produto-detalhe">
+      ${montarGaleria(produto)}
+      <div>
+        <span class="produto-card__categoria">${escapeHtml(produto.categoria)}</span>
+        <h1>${escapeHtml(produto.nome)}</h1>
+        <p class="texto-suave">${escapeHtml(produto.descricao || '')}</p>
+        <div class="preco-destaque" id="preco-exibido">${formatarPreco(precoInicial)}</div>
+        ${montarAvisoAtacado(produto)}
+
+        <div id="area-cores">${montarSeletorCores(produto)}</div>
+        <div id="area-tamanhos">${montarSeletorTamanhos(produto)}</div>
+
+        <div class="quantidade-seletor">
+          <button type="button" id="btn-menos" aria-label="Diminuir quantidade">−</button>
+          <input type="number" id="input-quantidade" value="${quantidadeInicial}" min="1" max="${produto.estoque}">
+          <button type="button" id="btn-mais" aria-label="Aumentar quantidade">+</button>
+        </div>
+        <p class="texto-suave" id="texto-estoque">${produto.estoque} unidades em estoque</p>
+
+        <button class="btn btn-primario btn-grande btn-bloco" id="btn-adicionar">
+          Adicionar ao carrinho
+        </button>
+        <p id="mensagem-adicionado" class="alerta alerta-sucesso" style="display:none; margin-top:16px;">
+          Produto adicionado ao carrinho!
+        </p>
+        <p id="mensagem-selecione" class="alerta alerta-erro" style="display:none; margin-top:16px;"></p>
+      </div>
+    </div>
+  `;
+
+  document.querySelectorAll('.produto-detalhe__miniaturas button').forEach((btn) => {
+    btn.addEventListener('click', () => trocarFotoPrincipal(Number(btn.dataset.indice)));
+  });
+
+  ligarEventosVariacoes(produto);
+
+  const inputQtd = document.getElementById('input-quantidade');
+  const precoEl = document.getElementById('preco-exibido');
+
+  function atualizarPrecoExibido() {
+    const qtd = Number(inputQtd.value) || 1;
+    if (modo === 'atacado') {
+      const preco = produto.preco_atacado || produto.preco_varejo;
+      precoEl.textContent = formatarPreco(preco) + ' / peça';
+      return;
+    }
+    const ehAtacado = produto.preco_atacado && qtd >= produto.quantidade_minima_atacado;
+    const preco = ehAtacado ? produto.preco_atacado : produto.preco_varejo;
+    precoEl.textContent = formatarPreco(preco) + (ehAtacado ? ' (preço de atacado aplicado)' : '');
+  }
+
+  document.getElementById('btn-menos').addEventListener('click', () => {
+    inputQtd.value = Math.max(1, Number(inputQtd.value) - 1);
+    atualizarPrecoExibido();
+  });
+  document.getElementById('btn-mais').addEventListener('click', () => {
+    inputQtd.value = Math.min(produto.estoque, Number(inputQtd.value) + 1);
+    atualizarPrecoExibido();
+  });
+  inputQtd.addEventListener('input', atualizarPrecoExibido);
+
+  document.getElementById('btn-adicionar').addEventListener('click', () => {
+    const msgSelecione = document.getElementById('mensagem-selecione');
+    const faltando = [];
+    if (produto.cores && produto.cores.length > 0 && !corSelecionada) faltando.push('a cor');
+    if (produto.tamanhos && produto.tamanhos.length > 0 && !tamanhoSelecionado) faltando.push('o tamanho');
+
+    if (faltando.length > 0) {
+      msgSelecione.textContent = `Selecione ${faltando.join(' e ')} antes de adicionar ao carrinho.`;
+      msgSelecione.style.display = 'block';
+      setTimeout(() => (msgSelecione.style.display = 'none'), 3000);
+      return;
+    }
+
+    const qtd = Math.max(1, Number(inputQtd.value) || 1);
+    const nomeCor = corSelecionada ? (produto.cores.find((c) => c.id === corSelecionada) || {}).nome : null;
+    adicionarAoCarrinho(produto, qtd, modo, { tamanho: tamanhoSelecionado, cor: nomeCor });
+    const msg = document.getElementById('mensagem-adicionado');
+    msg.style.display = 'block';
+    setTimeout(() => (msg.style.display = 'none'), 2500);
+  });
+}
+
+// Reamarra os cliques dos seletores depois de re-renderizar (evita perder
+// os listeners quando o HTML de cores/tamanhos é atualizado)
+function ligarEventosVariacoes(produto) {
+  document.querySelectorAll('.seletor-cores__bolinha').forEach((btn) => {
+    btn.onclick = () => {
+      corSelecionada = Number(btn.dataset.corId);
+      renderizarGaleriaComCor(produto, corSelecionada);
+      document.getElementById('area-cores').innerHTML = montarSeletorCores(produto);
+      ligarEventosVariacoes(produto);
+    };
+  });
+  document.querySelectorAll('.seletor-tamanhos__pill').forEach((btn) => {
+    btn.onclick = () => {
+      tamanhoSelecionado = btn.dataset.tamanho;
+      document.getElementById('area-tamanhos').innerHTML = montarSeletorTamanhos(produto);
+      ligarEventosVariacoes(produto);
+    };
+  });
+}
+
+async function carregarProduto() {
+  if (!produtoId) {
+    document.getElementById('conteudo-produto').innerHTML = `<div class="alerta alerta-erro">Produto não especificado.</div>`;
+    return;
+  }
+  try {
+    const produto = await apiFetch(`/produtos/${produtoId}`);
+    produtoAtual = produto;
+    renderizarProduto(produto);
+  } catch (err) {
+    document.getElementById('conteudo-produto').innerHTML = `<div class="alerta alerta-erro">Produto não encontrado.</div>`;
+  }
+}
+
+carregarProduto();
+</script>
+</body>
+</html>

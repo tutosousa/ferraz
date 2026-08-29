@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ — Finalizar compra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="index.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="carrinho.html" class="carrinho-link">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="container secao">
+  <h1>Finalizar compra</h1>
+  <div id="alerta-checkout"></div>
+
+  <div class="carrinho-layout" id="etapa-dados">
+    <form id="form-checkout">
+      <h3>Seus dados</h3>
+      <div class="campo">
+        <label for="cliente_nome">Nome completo</label>
+        <input type="text" id="cliente_nome" name="cliente_nome" required>
+      </div>
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="cliente_telefone">Telefone / WhatsApp</label>
+          <input type="tel" id="cliente_telefone" name="cliente_telefone" placeholder="(00) 00000-0000" required>
+        </div>
+        <div class="campo">
+          <label for="cliente_email">E-mail</label>
+          <input type="email" id="cliente_email" name="cliente_email" required>
+        </div>
+      </div>
+
+      <h3>Endereço de entrega</h3>
+      <div class="campo">
+        <label for="endereco_cep">CEP</label>
+        <input type="text" id="endereco_cep" name="endereco_cep" placeholder="00000-000">
+      </div>
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="endereco_rua">Rua</label>
+          <input type="text" id="endereco_rua" name="endereco_rua" required>
+        </div>
+        <div class="campo">
+          <label for="endereco_numero">Número</label>
+          <input type="text" id="endereco_numero" name="endereco_numero" required>
+        </div>
+      </div>
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="endereco_bairro">Bairro</label>
+          <input type="text" id="endereco_bairro" name="endereco_bairro" required>
+        </div>
+        <div class="campo">
+          <label for="endereco_cidade">Cidade</label>
+          <input type="text" id="endereco_cidade" name="endereco_cidade" required>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="endereco_estado">Estado</label>
+        <select id="endereco_estado" name="endereco_estado" required>
+          <option value="">Selecione o estado</option>
+          <option value="AC">Acre</option><option value="AL">Alagoas</option>
+          <option value="AP">Amapá</option><option value="AM">Amazonas</option>
+          <option value="BA">Bahia</option><option value="CE">Ceará</option>
+          <option value="DF">Distrito Federal</option><option value="ES">Espírito Santo</option>
+          <option value="GO">Goiás</option><option value="MA">Maranhão</option>
+          <option value="MT">Mato Grosso</option><option value="MS">Mato Grosso do Sul</option>
+          <option value="MG">Minas Gerais</option><option value="PA">Pará</option>
+          <option value="PB">Paraíba</option><option value="PR">Paraná</option>
+          <option value="PE">Pernambuco</option><option value="PI">Piauí</option>
+          <option value="RJ">Rio de Janeiro</option><option value="RN">Rio Grande do Norte</option>
+          <option value="RS">Rio Grande do Sul</option><option value="RO">Rondônia</option>
+          <option value="RR">Roraima</option><option value="SC">Santa Catarina</option>
+          <option value="SP">São Paulo</option><option value="SE">Sergipe</option>
+          <option value="TO">Tocantins</option>
+        </select>
+      </div>
+
+      <div class="campo" id="area-opcoes-frete" style="display:none;">
+        <label>Forma de envio</label>
+        <div id="lista-opcoes-frete" class="lista-opcoes-frete"></div>
+        <p class="texto-suave" id="aviso-frete" style="font-size:0.82rem; display:none; margin-top:6px;"></p>
+      </div>
+      <p class="texto-suave" id="mensagem-preencha-cep" style="font-size:0.85rem; display:none;">
+        Preencha o CEP e o estado para ver as opções de frete.
+      </p>
+
+      <p class="texto-suave" style="font-size:0.9rem;" id="texto-pagamento">
+        Na próxima etapa você escolhe como pagar (Pix, cartão ou boleto), tudo sem sair do site.
+      </p>
+
+      <button type="submit" class="btn btn-primario btn-grande btn-bloco" id="btn-continuar">
+        Continuar para o pagamento
+      </button>
+    </form>
+
+    <div class="resumo-pedido">
+      <h3>Resumo do pedido</h3>
+      <div id="itens-resumo"></div>
+      <div class="resumo-pedido__linha">
+        <span>Subtotal</span>
+        <span id="resumo-subtotal">R$ 0,00</span>
+      </div>
+      <div class="resumo-pedido__linha" id="linha-frete">
+        <span>Frete</span>
+        <span id="resumo-frete">Selecione o envio</span>
+      </div>
+      <div class="resumo-pedido__linha resumo-pedido__linha--total">
+        <span>Total</span>
+        <span id="resumo-total">R$ 0,00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Etapa de pagamento invisível (Payment Brick) -->
+  <div id="etapa-pagamento" style="display:none; max-width:560px; margin:0 auto;">
+    <button type="button" id="btn-voltar-dados" class="btn btn-secundario" style="margin-bottom:16px;">← Voltar e revisar dados</button>
+    <div class="resumo-pedido" style="margin-bottom:20px;">
+      <div class="resumo-pedido__linha resumo-pedido__linha--total">
+        <span>Total a pagar</span>
+        <span id="pagamento-total"></span>
+      </div>
+    </div>
+    <div id="brick-container"></div>
+    <div id="resultado-pagamento"></div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container"><p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/customer.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+
+const params = new URLSearchParams(window.location.search);
+const modo = params.get('modo') === 'atacado' ? 'atacado' : 'varejo';
+document.body.dataset.modoCarrinho = modo;
+
+const carrinho = obterCarrinho(modo);
+let freteAtual = 0;
+let numeroPedidoAtual = null;
+let mpInstancia = null;
+let brickController = null;
+
+if (carrinho.length === 0) {
+  window.location.href = modo === 'atacado' ? 'atacado.html' : 'index.html';
+}
+
+if (modo === 'atacado') {
+  document.getElementById('linha-frete').style.display = 'none';
+  document.getElementById('texto-pagamento').textContent =
+    'Pedidos de atacado não têm frete fixo — combinamos o envio direto com você após a confirmação.';
+} else {
+  document.getElementById('mensagem-preencha-cep').style.display = 'block';
+}
+
+async function preencherComPerfilLogado() {
+  if (!obterTokenCliente()) return;
+  try {
+    const perfil = await apiFetchCliente('/clientes/perfil');
+    document.getElementById('cliente_nome').value = perfil.nome || '';
+    document.getElementById('cliente_email').value = perfil.email || '';
+    document.getElementById('cliente_telefone').value = perfil.telefone || '';
+    document.getElementById('endereco_cep').value = perfil.endereco_cep || '';
+    document.getElementById('endereco_rua').value = perfil.endereco_rua || '';
+    document.getElementById('endereco_numero').value = perfil.endereco_numero || '';
+    document.getElementById('endereco_bairro').value = perfil.endereco_bairro || '';
+    document.getElementById('endereco_cidade').value = perfil.endereco_cidade || '';
+    document.getElementById('endereco_estado').value = perfil.endereco_estado || '';
+    if (perfil.endereco_estado) {
+      document.getElementById('endereco_estado').dispatchEvent(new Event('change'));
+    }
+  } catch (err) {
+    // segue com o formulário em branco se não conseguir carregar
+  }
+}
+
+function renderizarResumo() {
+  const itensCalculados = carrinho.map((item) => calcularItem(item, modo));
+  const subtotal = itensCalculados.reduce((soma, item) => soma + item.subtotal, 0);
+
+  document.getElementById('itens-resumo').innerHTML = itensCalculados.map((item) => {
+    const variacao = [item.tamanho, item.cor].filter(Boolean).join(' · ');
+    return `
+      <div class="resumo-pedido__linha">
+        <span>${escapeHtml(item.nome)}${variacao ? ` (${escapeHtml(variacao)})` : ''} × ${item.quantidade}</span>
+        <span>${formatarPreco(item.subtotal)}</span>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('resumo-subtotal').textContent = formatarPreco(subtotal);
+  document.getElementById('resumo-total').textContent = formatarPreco(subtotal + freteAtual);
+  return subtotal;
+}
+
+let subtotalAtual = renderizarResumo();
+let opcaoFreteSelecionada = null;
+
+// Busca as opções de frete assim que CEP e estado estiverem preenchidos
+// (dispara ao trocar o estado, e ao sair do campo de CEP).
+async function buscarOpcoesFrete() {
+  if (modo === 'atacado') return;
+
+  const cep = document.getElementById('endereco_cep').value.replace(/\D/g, '');
+  const estado = document.getElementById('endereco_estado').value;
+
+  if (cep.length !== 8 || !estado) {
+    document.getElementById('area-opcoes-frete').style.display = 'none';
+    document.getElementById('mensagem-preencha-cep').style.display = 'block';
+    return;
+  }
+  document.getElementById('mensagem-preencha-cep').style.display = 'none';
+
+  const listaEl = document.getElementById('lista-opcoes-frete');
+  const areaEl = document.getElementById('area-opcoes-frete');
+  areaEl.style.display = 'block';
+  listaEl.innerHTML = `<p class="texto-suave" style="font-size:0.85rem;">Calculando opções de frete...</p>`;
+
+  try {
+    const resultado = await apiFetch('/pedidos/frete', {
+      method: 'POST',
+      body: JSON.stringify({
+        cep,
+        estado,
+        itens: carrinho.map((item) => ({ produto_id: item.produto_id, quantidade: item.quantidade })),
+      }),
+    });
+
+    renderizarOpcoesFrete(resultado.opcoes || []);
+
+    const avisoEl = document.getElementById('aviso-frete');
+    if (resultado.aviso) {
+      avisoEl.textContent = resultado.aviso;
+      avisoEl.style.display = 'block';
+    } else {
+      avisoEl.style.display = 'none';
+    }
+  } catch (err) {
+    listaEl.innerHTML = `<div class="alerta alerta-erro">Não foi possível calcular o frete agora. Confira o CEP e tente novamente.</div>`;
+  }
+}
+
+function renderizarOpcoesFrete(opcoes) {
+  const listaEl = document.getElementById('lista-opcoes-frete');
+
+  if (opcoes.length === 0) {
+    listaEl.innerHTML = `<div class="alerta alerta-erro">Nenhuma opção de frete disponível para este CEP.</div>`;
+    return;
+  }
+
+  listaEl.innerHTML = opcoes.map((op, i) => `
+    <label class="opcao-frete">
+      <input type="radio" name="servico_frete_id" value="${escapeHtml(op.id)}" ${i === 0 ? 'checked' : ''}>
+      <span class="opcao-frete__info">
+        <span class="opcao-frete__nome">${escapeHtml(op.transportadora)} — ${escapeHtml(op.servico)}</span>
+        <span class="opcao-frete__prazo">${op.prazo_dias ? `Chega em até ${op.prazo_dias} dia(s) útil(eis)` : 'Prazo a confirmar'}</span>
+      </span>
+      <span class="opcao-frete__preco">${formatarPreco(op.preco)}</span>
+    </label>
+  `).join('');
+
+  // Seleciona a primeira opção (mais barata, já que o backend ordena assim)
+  opcaoFreteSelecionada = opcoes[0];
+  atualizarTotalComFrete();
+
+  listaEl.querySelectorAll('input[name="servico_frete_id"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      opcaoFreteSelecionada = opcoes.find((o) => String(o.id) === radio.value);
+      atualizarTotalComFrete();
+    });
+  });
+}
+
+function atualizarTotalComFrete() {
+  freteAtual = opcaoFreteSelecionada ? opcaoFreteSelecionada.preco : 0;
+  document.getElementById('resumo-frete').textContent = formatarPreco(freteAtual);
+  document.getElementById('resumo-total').textContent = formatarPreco(subtotalAtual + freteAtual);
+}
+
+document.getElementById('endereco_estado').addEventListener('change', buscarOpcoesFrete);
+document.getElementById('endereco_cep').addEventListener('blur', buscarOpcoesFrete);
+
+// ---------- Etapa 1: cria o pedido, depois decide se mostra o Brick ----------
+document.getElementById('form-checkout').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btn-continuar');
+  const alertaEl = document.getElementById('alerta-checkout');
+  alertaEl.innerHTML = '';
+
+  if (modo !== 'atacado' && !opcaoFreteSelecionada) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">Preencha o CEP e escolha uma forma de envio antes de continuar.</div>`;
+    document.getElementById('area-opcoes-frete').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const formData = new FormData(e.target);
+  const dados = Object.fromEntries(formData.entries());
+  dados.tipo_pedido = modo;
+  dados.itens = carrinho.map((item) => ({
+    produto_id: item.produto_id,
+    quantidade: item.quantidade,
+    tamanho: item.tamanho || undefined,
+    cor: item.cor || undefined,
+  }));
+
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
+
+  try {
+    const headers = {};
+    if (obterTokenCliente()) headers.Authorization = `Bearer ${obterTokenCliente()}`;
+
+    const resultado = await apiFetch('/pedidos', { method: 'POST', headers, body: JSON.stringify(dados) });
+    numeroPedidoAtual = resultado.numero_pedido;
+    limparCarrinho(modo);
+
+    if (!resultado.requer_pagamento) {
+      // Modo simulado (sem gateway configurado): já foi aprovado direto
+      window.location.href = `pedido-sucesso.html?numero=${encodeURIComponent(resultado.numero_pedido)}`;
+      return;
+    }
+
+    // Gateway ativo: mostra o checkout invisível (Payment Brick)
+    document.getElementById('pagamento-total').textContent = formatarPreco(resultado.total);
+    document.getElementById('etapa-dados').style.display = 'none';
+    document.getElementById('etapa-pagamento').style.display = 'block';
+
+    await iniciarPaymentBrick(resultado.total, document.getElementById('cliente_email').value);
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Continuar para o pagamento';
+  }
+});
+
+document.getElementById('btn-voltar-dados').addEventListener('click', () => {
+  document.getElementById('etapa-pagamento').style.display = 'none';
+  document.getElementById('etapa-dados').style.display = 'grid';
+  document.getElementById('btn-continuar').disabled = false;
+  document.getElementById('btn-continuar').textContent = 'Continuar para o pagamento';
+});
+
+// ---------- Etapa 2: Payment Brick (cartão + Pix + boleto, tudo no site) ----------
+async function iniciarPaymentBrick(total, emailPagador) {
+  const resultadoEl = document.getElementById('resultado-pagamento');
+  resultadoEl.innerHTML = '';
+
+  try {
+    const config = await apiFetch('/pagamentos/config');
+    if (!config.ativo || !config.publicKey) {
+      resultadoEl.innerHTML = `<div class="alerta alerta-erro">O pagamento online ainda não foi configurado pela loja. <a href="https://wa.me/558196336445" target="_blank" rel="noopener">Entre em contato pelo WhatsApp</a> para finalizar seu pedido ${escapeHtml(numeroPedidoAtual)}.</div>`;
+      return;
+    }
+
+    mpInstancia = new MercadoPago(config.publicKey, { locale: 'pt-BR' });
+
+    if (brickController) {
+      await brickController.unmount();
+    }
+
+    const bricksBuilder = mpInstancia.bricks();
+    brickController = await bricksBuilder.create('payment', 'brick-container', {
+      initialization: {
+        amount: total,
+        payer: { email: emailPagador || undefined },
+      },
+      customization: {
+        paymentMethods: {
+          creditCard: 'all',
+          debitCard: 'all',
+          ticket: 'all',    // boleto
+          bankTransfer: 'all', // Pix
+        },
+      },
+      callbacks: {
+        onReady: () => {
+          // Chamado quando o formulário de pagamento termina de carregar.
+          // Não precisamos fazer nada especial aqui, mas o Brick exige
+          // que esse callback exista.
+        },
+        onSubmit: ({ selectedPaymentMethod, formData }) => {
+          return new Promise(async (resolve, reject) => {
+            try {
+              const resposta = await apiFetch('/pagamentos/processar', {
+                method: 'POST',
+                body: JSON.stringify({ numero_pedido: numeroPedidoAtual, formData }),
+              });
+              mostrarResultadoPagamento(resposta);
+              resolve();
+            } catch (err) {
+              resultadoEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+              reject();
+            }
+          });
+        },
+        onError: (error) => {
+          console.error('Erro no Payment Brick:', error);
+          resultadoEl.innerHTML = `<div class="alerta alerta-erro">Não foi possível carregar o formulário de pagamento. Recarregue a página e tente novamente.</div>`;
+        },
+      },
+    });
+  } catch (err) {
+    resultadoEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function mostrarResultadoPagamento(resposta) {
+  const resultadoEl = document.getElementById('resultado-pagamento');
+
+  if (resposta.status === 'approved') {
+    window.location.href = `pedido-sucesso.html?numero=${encodeURIComponent(numeroPedidoAtual)}`;
+    return;
+  }
+
+  if (resposta.status === 'rejected') {
+    resultadoEl.innerHTML = `<div class="alerta alerta-erro">Pagamento recusado. Verifique os dados ou tente outra forma de pagamento.</div>`;
+    return;
+  }
+
+  // pending / in_process — comum em Pix (aguardando confirmação) e boleto
+  let extra = '';
+  if (resposta.qr_code_base64) {
+    extra += `
+      <div style="text-align:center; margin-top:16px;">
+        <img src="data:image/png;base64,${resposta.qr_code_base64}" alt="QR Code Pix" style="max-width:220px;">
+        <p class="texto-suave" style="font-size:0.85rem;">Escaneie o QR code no app do seu banco, ou copie o código abaixo:</p>
+        <textarea readonly style="width:100%; height:70px; font-size:0.75rem; padding:8px;">${escapeHtml(resposta.qr_code)}</textarea>
+      </div>
+    `;
+  }
+  if (resposta.ticket_url) {
+    extra += `<p style="text-align:center; margin-top:16px;"><a href="${resposta.ticket_url}" target="_blank" rel="noopener" class="btn btn-primario">Ver / imprimir boleto</a></p>`;
+  }
+
+  resultadoEl.innerHTML = `
+    <div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">
+      Pedido registrado! Estamos aguardando a confirmação do pagamento.
+      Número do pedido: <strong>${escapeHtml(numeroPedidoAtual)}</strong>
+    </div>
+    ${extra}
+    <p style="text-align:center; margin-top:20px;">
+      <a href="pedido-sucesso.html?numero=${encodeURIComponent(numeroPedidoAtual)}" class="btn btn-secundario">Ver status do meu pedido</a>
+    </p>
+  `;
+}
+
+preencherComPerfilLogado();
+</script>
+</body>
+</html>

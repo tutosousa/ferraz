@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ Admin — Categorias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__logo">
+      <img src="../assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ Admin</span>
+    </div>
+    <ul class="admin-sidebar__nav" id="admin-nav"></ul>
+    <div class="admin-sidebar__rodape">
+      <p class="texto-suave" style="font-size:0.85rem; margin-bottom:8px;">Olá, <strong id="admin-nome"></strong></p>
+      <button class="btn btn-secundario btn-bloco" id="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topo">
+      <div>
+        <h1 style="margin-bottom:2px;">Categorias</h1>
+        <p class="texto-suave">Crie, edite e organize as categorias da loja</p>
+      </div>
+      <button class="btn btn-primario btn-grande" id="btn-nova-categoria">+ Nova categoria</button>
+    </div>
+
+    <div id="alerta-categorias"></div>
+
+    <div class="admin-painel">
+      <div style="overflow-x:auto;">
+        <table class="tabela-admin">
+          <thead>
+            <tr><th>Nome</th><th>Slug (usado na URL)</th><th>Produtos</th><th></th></tr>
+          </thead>
+          <tbody id="tabela-categorias">
+            <tr><td colspan="4">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal de criação/edição de categoria -->
+<div class="modal-fundo" id="modal-categoria" style="display:none;">
+  <div class="modal-caixa" style="max-width:440px;">
+    <h2 id="modal-titulo">Nova categoria</h2>
+    <form id="form-categoria">
+      <input type="hidden" id="categoria_id">
+      <div class="campo">
+        <label for="c_nome">Nome da categoria</label>
+        <input type="text" id="c_nome" required placeholder="Ex: Blusas">
+        <p class="texto-suave" style="font-size:0.8rem; margin-top:4px;" id="preview-slug"></p>
+      </div>
+      <div id="alerta-modal-categoria"></div>
+      <div class="acoes-linha" style="margin-top:16px;">
+        <button type="submit" class="btn btn-primario">Salvar</button>
+        <button type="button" class="btn btn-secundario" id="btn-cancelar-categoria">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/cart.js"></script>
+<script src="js/admin.js"></script>
+<script>
+exigirLoginAdmin();
+montarSidebarAdmin('categorias');
+
+function gerarSlugPreview(nome) {
+  return nome.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+document.getElementById('c_nome').addEventListener('input', (e) => {
+  const slug = gerarSlugPreview(e.target.value);
+  document.getElementById('preview-slug').textContent = slug ? `URL: /categoria/${slug}` : '';
+});
+
+async function carregarCategorias() {
+  const tbody = document.getElementById('tabela-categorias');
+  try {
+    const categorias = await apiFetchAdmin('/categorias/admin/all');
+
+    if (categorias.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4">Nenhuma categoria cadastrada ainda.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = categorias.map((c) => `
+      <tr>
+        <td>${escapeHtml(c.nome)}</td>
+        <td class="texto-suave">${escapeHtml(c.slug)}</td>
+        <td>${c.total_produtos}</td>
+        <td>
+          <div class="acoes-linha">
+            <button class="link-acao" data-editar="${c.id}" data-nome="${escapeHtml(c.nome)}">Editar</button>
+            <button class="link-acao link-acao--perigo" data-remover="${c.id}" data-total="${c.total_produtos}">Remover</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('[data-editar]').forEach((btn) => {
+      btn.addEventListener('click', () => abrirModalEdicao(btn.dataset.editar, btn.dataset.nome));
+    });
+    tbody.querySelectorAll('[data-remover]').forEach((btn) => {
+      btn.addEventListener('click', () => removerCategoria(btn.dataset.remover, Number(btn.dataset.total)));
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function abrirModalNova() {
+  document.getElementById('modal-titulo').textContent = 'Nova categoria';
+  document.getElementById('form-categoria').reset();
+  document.getElementById('categoria_id').value = '';
+  document.getElementById('preview-slug').textContent = '';
+  document.getElementById('alerta-modal-categoria').innerHTML = '';
+  document.getElementById('modal-categoria').style.display = 'flex';
+}
+
+function abrirModalEdicao(id, nomeAtual) {
+  document.getElementById('modal-titulo').textContent = 'Editar categoria';
+  document.getElementById('categoria_id').value = id;
+  document.getElementById('c_nome').value = nomeAtual;
+  document.getElementById('preview-slug').textContent = `URL: /categoria/${gerarSlugPreview(nomeAtual)}`;
+  document.getElementById('alerta-modal-categoria').innerHTML = '';
+  document.getElementById('modal-categoria').style.display = 'flex';
+}
+
+function fecharModal() {
+  document.getElementById('modal-categoria').style.display = 'none';
+}
+
+document.getElementById('btn-nova-categoria').addEventListener('click', abrirModalNova);
+document.getElementById('btn-cancelar-categoria').addEventListener('click', fecharModal);
+
+document.getElementById('form-categoria').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertaModal = document.getElementById('alerta-modal-categoria');
+  alertaModal.innerHTML = '';
+
+  const id = document.getElementById('categoria_id').value;
+  const nome = document.getElementById('c_nome').value;
+
+  try {
+    if (id) {
+      await apiFetchAdmin(`/categorias/${id}`, { method: 'PUT', body: JSON.stringify({ nome }) });
+    } else {
+      await apiFetchAdmin('/categorias', { method: 'POST', body: JSON.stringify({ nome }) });
+    }
+    fecharModal();
+    carregarCategorias();
+  } catch (err) {
+    alertaModal.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+async function removerCategoria(id, totalProdutos) {
+  const aviso = totalProdutos > 0
+    ? `Esta categoria tem ${totalProdutos} produto(s). Remova ou mova esses produtos antes de excluir a categoria. Tentar mesmo assim?`
+    : 'Tem certeza que deseja remover esta categoria?';
+  if (!confirm(aviso)) return;
+
+  try {
+    await apiFetchAdmin(`/categorias/${id}`, { method: 'DELETE' });
+    carregarCategorias();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+carregarCategorias();
+</script>
+</body>
+</html>

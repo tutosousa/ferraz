@@ -1,0 +1,384 @@
+/* =========================================================================
+   FERRAZ — Painel Administrativo
+   Reaproveita as variáveis de cor/tipografia definidas em css/style.css.
+   Foco em clareza para gestão: tabelas legíveis, botões grandes, pouco ruído.
+   ========================================================================= */
+
+.admin-body {
+  background: #fafafa;
+  min-height: 100vh;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.admin-topbar-mobile {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .admin-shell { grid-template-columns: 1fr; }
+
+  /* Em vez de simplesmente esconder o menu (o que deixava o admin sem
+     navegação nenhuma no celular), ele vira uma gaveta que desliza da
+     esquerda, aberta pelo botão hambúrguer no topo. */
+  .admin-topbar-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--cor-linha);
+    position: sticky;
+    top: 0;
+    z-index: 60;
+  }
+  .admin-topbar-mobile__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+  }
+  .admin-topbar-mobile__logo img { width: 32px; height: 32px; }
+  .admin-menu-toggle {
+    background: none;
+    border: 1.5px solid var(--cor-linha);
+    border-radius: var(--raio);
+    width: 42px;
+    height: 42px;
+    font-size: 1.3rem;
+    cursor: pointer;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    z-index: 70;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--sombra-media);
+  }
+  .admin-sidebar.aberta { transform: translateX(0); }
+
+  .admin-sidebar-fundo {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 65;
+  }
+  .admin-sidebar-fundo.visivel { display: block; }
+
+  .admin-main { padding: 20px 16px; }
+  .admin-topo { flex-direction: column; align-items: flex-start; }
+}
+
+.admin-sidebar {
+  background: #fff;
+  border-right: 1px solid var(--cor-linha);
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+}
+.admin-sidebar__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px 24px;
+  border-bottom: 1px solid var(--cor-linha);
+  margin-bottom: 16px;
+}
+.admin-sidebar__logo img { width: 38px; height: 38px; }
+.admin-sidebar__logo span { font-weight: 700; letter-spacing: 0.03em; }
+
+.admin-sidebar__nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+.admin-sidebar__nav a {
+  display: block;
+  padding: 13px 24px;
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-left: 3px solid transparent;
+}
+.admin-sidebar__nav a:hover,
+.admin-sidebar__nav a.ativo {
+  color: var(--cor-primaria-escura);
+  background: var(--cor-primaria-clara);
+  border-left-color: var(--cor-primaria);
+  text-decoration: none;
+}
+
+.admin-sidebar__rodape {
+  padding: 16px 24px 0;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.admin-main {
+  padding: 32px;
+}
+.admin-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-cards-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.admin-card {
+  background: #fff;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  padding: 20px;
+}
+.admin-card__label {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.admin-card__valor {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
+.admin-card__valor--positivo { color: var(--cor-sucesso); }
+.admin-card__valor--negativo { color: var(--cor-erro); }
+
+.admin-painel {
+  background: #fff;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  overflow: hidden;
+}
+.admin-painel__cabecalho {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--cor-linha);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+table.tabela-admin {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.tabela-admin th,
+table.tabela-admin td {
+  padding: 14px 24px;
+  text-align: left;
+  border-bottom: 1px solid var(--cor-linha);
+  font-size: 0.92rem;
+}
+table.tabela-admin th {
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  background: #fbfbfb;
+}
+table.tabela-admin tbody tr:hover { background: #fafcfc; }
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.badge-pendente { background: #fff2d6; color: #916800; }
+.badge-pago { background: var(--cor-primaria-clara); color: var(--cor-primaria-escura); }
+.badge-enviado { background: #e3ecfc; color: #2454b0; }
+.badge-entregue { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso); }
+.badge-cancelado { background: var(--cor-erro-fundo); color: var(--cor-erro); }
+
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+}
+.modal-caixa {
+  background: #fff;
+  border-radius: var(--raio);
+  padding: 28px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.tela-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cor-primaria-clara);
+  padding: 24px;
+}
+.tela-login__caixa {
+  background: #fff;
+  border-radius: var(--raio);
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--sombra-media);
+}
+.tela-login__logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.tela-login__logo img { width: 64px; height: 64px; }
+
+.acoes-linha {
+  display: flex;
+  gap: 8px;
+}
+.link-acao {
+  background: none;
+  border: none;
+  color: var(--cor-primaria-escura);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+}
+.link-acao--perigo { color: var(--cor-erro); }
+
+.galeria-admin-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.galeria-admin-item {
+  position: relative;
+  border-radius: var(--raio);
+  border: 1px solid var(--cor-linha);
+  overflow: hidden;
+}
+.galeria-admin-item img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; }
+.galeria-admin-item__remover {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.galeria-admin-item__remover:hover { background: var(--cor-erro); }
+
+/* ------------------------------ Botão de upload de fotos ------------------------------ */
+.upload-fotos {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.upload-fotos__botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 1.5px dashed var(--cor-primaria);
+  border-radius: var(--raio);
+  background: var(--cor-primaria-clara);
+  color: var(--cor-primaria-escura);
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-style 0.15s ease;
+}
+.upload-fotos__botao:hover {
+  background: #ddf3ef;
+  border-style: solid;
+}
+.upload-fotos__icone { font-size: 1.1rem; }
+.upload-fotos__status {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+}
+.upload-fotos__status--ativo {
+  color: var(--cor-primaria-escura);
+  font-weight: 600;
+}
+
+/* ------------------------------ Tags de cor/tamanho (admin) ------------------------------ */
+.lista-tags-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 20px;
+}
+.tag-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--cor-linha);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: #fff;
+}
+.tag-admin__bolinha {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.15);
+  display: inline-block;
+}
+.tag-admin button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+  padding: 0;
+  line-height: 1;
+}
+.tag-admin button:hover { color: var(--cor-erro); }
+
+.galeria-admin-item__cor {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  padding: 3px 4px;
+  border: 1px solid var(--cor-linha);
+  border-radius: 3px;
+  font-family: inherit;
+}

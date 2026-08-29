@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ Atacado — Peças de moda a preço de fábrica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-modo-carrinho="atacado">
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="atacado.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ Atacado</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="index.html" class="nav-link-secundario">Comprar no varejo</a>
+      <a href="conta.html" class="nav-link-secundario" id="link-conta">Entrar</a>
+      <a href="carrinho.html?modo=atacado" class="carrinho-link">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+  <nav class="site-nav">
+    <div class="container">
+      <ul class="site-nav__lista" id="menu-categorias">
+        <li><a href="atacado.html" id="link-todas-pecas">Todas as peças</a></li>
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<section class="banner-atacado">
+  <div class="container">
+    <span class="banner-atacado__selo">Qualquer peça por R$ 35</span>
+    <h1>No atacado, você compra por até 50% menos que o varejo.</h1>
+    <p>Vestidos, saias, calças e todos os outros modelos, sempre R$ 35 a peça. Misture os modelos que quiser — o único mínimo é 12 peças no pedido total.</p>
+  </div>
+</section>
+
+<main class="container secao">
+  <div id="conteudo-catalogo">
+    <p class="carregando">Carregando produtos...</p>
+  </div>
+</main>
+
+<section class="secao secao-ajuda">
+  <div class="container secao-ajuda__caixa">
+    <h2>Dúvidas sobre o pedido de atacado?</h2>
+    <p>Fale com a gente pelo WhatsApp para tirar dúvidas sobre prazos, formas de pagamento e condições especiais para lojistas.</p>
+    <a href="https://wa.me/558196336445" target="_blank" rel="noopener" class="btn btn-primario btn-grande">Falar no WhatsApp</a>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container site-footer__grade">
+    <div class="site-footer__coluna">
+      <div class="site-footer__marca">
+        <img src="assets/logo.png" alt="Logo FERRAZ">
+        <span>FERRAZ</span>
+      </div>
+      <p class="texto-suave">Moda atemporal, feita para durar. Peças de alfaiataria e conjuntos para o seu dia a dia, no varejo ou no atacado.</p>
+      <div class="site-footer__social">
+        <a href="https://wa.me/558196336445" target="_blank" rel="noopener" aria-label="WhatsApp">WhatsApp</a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>
+      </div>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Institucional</h4>
+      <ul>
+        <li><a href="index.html">Loja (varejo)</a></li>
+        <li><a href="atacado.html">Loja (atacado)</a></li>
+        <li><a href="conta.html">Minha conta</a></li>
+        <li><a href="carrinho.html">Meu carrinho</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Categorias</h4>
+      <ul id="footer-categorias">
+        <li><a href="index.html">Ver todas as peças</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Fale com a gente</h4>
+      <ul class="site-footer__contato">
+        <li><a href="https://wa.me/558196336445" target="_blank" rel="noopener">WhatsApp: (81) 9633-6445</a></li>
+        <li><a href="mailto:Ferrazcollection@icloud.com">E-mail: Ferrazcollection@icloud.com</a></li>
+        <li>Seg. a Sex., 9h às 18h</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="site-footer__barra">
+    <div class="container site-footer__barra-conteudo">
+      <p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p>
+      <p class="texto-suave" style="font-size:0.82rem;">Pagamento processado com segurança via Mercado Pago — Pix, cartão e boleto.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/customer.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+atualizarLinkConta('link-conta');
+
+const params = new URLSearchParams(window.location.search);
+const categoriaSelecionada = params.get('categoria');
+
+async function carregarCategorias() {
+  try {
+    const categorias = await apiFetch('/categorias');
+    const menu = document.getElementById('menu-categorias');
+    const linkTodas = document.getElementById('link-todas-pecas');
+    if (!categoriaSelecionada) linkTodas.classList.add('ativo');
+
+    categorias.forEach((cat) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = `atacado.html?categoria=${encodeURIComponent(cat.slug)}`;
+      a.textContent = cat.nome;
+      if (cat.slug === categoriaSelecionada) a.classList.add('ativo');
+      li.appendChild(a);
+      menu.appendChild(li);
+    });
+  } catch (err) {
+    console.error('Erro ao carregar categorias:', err);
+  }
+}
+
+function renderizarProdutoCard(produto) {
+  const imagem = produto.imagem_url
+    ? `<img src="${BACKEND_ORIGIN}${produto.imagem_url}" alt="${escapeHtml(produto.nome)}">`
+    : `<div class="produto-card__placeholder">Foto em breve</div>`;
+
+  const temAtacado = Boolean(produto.preco_atacado);
+  const precoHtml = temAtacado
+    ? `<div class="produto-card__preco produto-card__preco--atacado">
+         <span class="preco-de">De ${formatarPreco(produto.preco_varejo)}</span>
+         <span class="preco-por">${formatarPreco(produto.preco_atacado)} <small>/ peça</small></span>
+       </div>`
+    : `<div class="produto-card__preco">${formatarPreco(produto.preco_varejo)}<small>preço de atacado sob consulta</small></div>`;
+
+  return `
+    <a href="produto.html?id=${produto.id}&modo=atacado" class="produto-card">
+      <div class="produto-card__imagem">${imagem}</div>
+      <div class="produto-card__corpo">
+        <span class="produto-card__categoria">${escapeHtml(produto.categoria)}</span>
+        <h3 class="produto-card__nome">${escapeHtml(produto.nome)}</h3>
+        ${precoHtml}
+      </div>
+    </a>
+  `;
+}
+
+async function carregarProdutos() {
+  const container = document.getElementById('conteudo-catalogo');
+  try {
+    const query = categoriaSelecionada ? `?categoria=${encodeURIComponent(categoriaSelecionada)}` : '';
+    const produtos = await apiFetch(`/produtos${query}`);
+
+    if (produtos.length === 0) {
+      container.innerHTML = `<div class="estado-vazio"><h3>Nenhum produto encontrado</h3></div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="produtos-grade">${produtos.map(renderizarProdutoCard).join('')}</div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="alerta alerta-erro">Não foi possível carregar os produtos. Verifique se o endereço do backend em js/api.js está correto e se o servidor está rodando.</div>`;
+    console.error(err);
+  }
+}
+
+carregarCategorias();
+carregarProdutos();
+</script>
+</body>
+</html>

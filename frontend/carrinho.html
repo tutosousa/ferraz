@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ — Meu carrinho</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="index.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="atacado.html" class="nav-link-secundario" id="link-atacado">Comprar no atacado</a>
+      <a href="conta.html" class="nav-link-secundario" id="link-conta">Entrar</a>
+      <a href="carrinho.html" class="carrinho-link">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="container secao">
+  <h1 id="titulo-carrinho">Meu carrinho</h1>
+  <div id="conteudo-carrinho"></div>
+</main>
+
+<footer class="site-footer">
+  <div class="container site-footer__grade">
+    <div class="site-footer__coluna">
+      <div class="site-footer__marca">
+        <img src="assets/logo.png" alt="Logo FERRAZ">
+        <span>FERRAZ</span>
+      </div>
+      <p class="texto-suave">Moda atemporal, feita para durar. Peças de alfaiataria e conjuntos para o seu dia a dia, no varejo ou no atacado.</p>
+      <div class="site-footer__social">
+        <a href="https://wa.me/558196336445" target="_blank" rel="noopener" aria-label="WhatsApp">WhatsApp</a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>
+      </div>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Institucional</h4>
+      <ul>
+        <li><a href="index.html">Loja (varejo)</a></li>
+        <li><a href="atacado.html">Loja (atacado)</a></li>
+        <li><a href="conta.html">Minha conta</a></li>
+        <li><a href="carrinho.html">Meu carrinho</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Categorias</h4>
+      <ul id="footer-categorias">
+        <li><a href="index.html">Ver todas as peças</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Fale com a gente</h4>
+      <ul class="site-footer__contato">
+        <li><a href="https://wa.me/558196336445" target="_blank" rel="noopener">WhatsApp: (81) 9633-6445</a></li>
+        <li><a href="mailto:Ferrazcollection@icloud.com">E-mail: Ferrazcollection@icloud.com</a></li>
+        <li>Seg. a Sex., 9h às 18h</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="site-footer__barra">
+    <div class="container site-footer__barra-conteudo">
+      <p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p>
+      <p class="texto-suave" style="font-size:0.82rem;">Pagamento processado com segurança via Mercado Pago — Pix, cartão e boleto.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/customer.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+
+const params = new URLSearchParams(window.location.search);
+const modo = params.get('modo') === 'atacado' ? 'atacado' : 'varejo';
+document.body.dataset.modoCarrinho = modo;
+
+if (modo === 'atacado') {
+  document.getElementById('titulo-carrinho').textContent = 'Meu carrinho de atacado';
+  document.getElementById('link-atacado').textContent = 'Ver comprar no varejo';
+  document.getElementById('link-atacado').href = 'index.html';
+}
+
+atualizarLinkConta('link-conta');
+
+const MINIMO_ATACADO = 12;
+
+function renderizarCarrinho() {
+  const container = document.getElementById('conteudo-carrinho');
+  const carrinho = obterCarrinho(modo);
+
+  if (carrinho.length === 0) {
+    container.innerHTML = `
+      <div class="estado-vazio">
+        <h3>Seu carrinho está vazio</h3>
+        <p>Que tal dar uma olhada nas nossas peças?</p>
+        <a href="${modo === 'atacado' ? 'atacado.html' : 'index.html'}" class="btn btn-primario">Ver catálogo</a>
+      </div>
+    `;
+    return;
+  }
+
+  const itensCalculados = carrinho.map((item) => calcularItem(item, modo));
+  const subtotal = itensCalculados.reduce((soma, item) => soma + item.subtotal, 0);
+  const totalPecas = itensCalculados.reduce((soma, item) => soma + item.quantidade, 0);
+
+  const listaHtml = itensCalculados.map((item) => {
+    const imagem = item.imagem_url
+      ? `<img src="${BACKEND_ORIGIN}${item.imagem_url}" alt="${escapeHtml(item.nome)}">`
+      : '';
+    const variacao = [item.tamanho, item.cor].filter(Boolean).join(' · ');
+    return `
+      <div class="carrinho-item">
+        <div class="carrinho-item__imagem">${imagem}</div>
+        <div>
+          <p class="carrinho-item__nome">${escapeHtml(item.nome)}</p>
+          ${variacao ? `<p class="texto-suave" style="font-size:0.85rem; margin:0 0 4px;">${escapeHtml(variacao)}</p>` : ''}
+          <p class="carrinho-item__preco">
+            ${formatarPreco(item.precoUnitario)} × ${item.quantidade}
+            ${item.ehAtacado ? ' (preço de atacado)' : ''}
+          </p>
+        </div>
+        <div class="carrinho-item__acoes">
+          <div class="quantidade-seletor" style="margin:0;">
+            <button type="button" data-acao="menos" data-chave="${item.chave}" aria-label="Diminuir">−</button>
+            <input type="number" min="1" value="${item.quantidade}" data-chave="${item.chave}" class="input-qtd-carrinho">
+            <button type="button" data-acao="mais" data-chave="${item.chave}" aria-label="Aumentar">+</button>
+          </div>
+          <strong>${formatarPreco(item.subtotal)}</strong>
+          <button class="carrinho-item__remover" data-chave="${item.chave}">Remover</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const avisoMinimo = modo === 'atacado' && totalPecas < MINIMO_ATACADO
+    ? `<div class="alerta alerta-erro">Faltam ${MINIMO_ATACADO - totalPecas} peças para atingir o pedido mínimo de atacado (${MINIMO_ATACADO} peças).</div>`
+    : '';
+
+  const podeFinalizr = modo !== 'atacado' || totalPecas >= MINIMO_ATACADO;
+
+  container.innerHTML = `
+    <div class="carrinho-layout">
+      <div>${listaHtml}</div>
+      <div class="resumo-pedido">
+        <h3>Resumo</h3>
+        ${modo === 'atacado' ? `<div class="resumo-pedido__linha"><span>Total de peças</span><span>${totalPecas}</span></div>` : ''}
+        <div class="resumo-pedido__linha">
+          <span>Subtotal</span>
+          <span>${formatarPreco(subtotal)}</span>
+        </div>
+        <p class="texto-suave" style="font-size:0.85rem;">${modo === 'atacado' ? 'Pedidos de atacado não pagam frete fixo — combinamos o envio direto com você.' : 'O frete é calculado na etapa de checkout, de acordo com o estado de entrega.'}</p>
+        <div class="resumo-pedido__linha resumo-pedido__linha--total">
+          <span>Total</span>
+          <span>${formatarPreco(subtotal)}</span>
+        </div>
+        ${avisoMinimo}
+        <a href="checkout.html?modo=${modo}" class="btn btn-primario btn-bloco btn-grande" style="margin-top:16px; ${podeFinalizr ? '' : 'pointer-events:none; opacity:0.5;'}">
+          Finalizar compra
+        </a>
+      </div>
+    </div>
+  `;
+
+  container.querySelectorAll('[data-acao]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const chave = btn.dataset.chave;
+      const item = obterCarrinho(modo).find((i) => i.chave === chave);
+      if (!item) return;
+      const novaQtd = btn.dataset.acao === 'mais' ? item.quantidade + 1 : item.quantidade - 1;
+      atualizarQuantidade(chave, novaQtd, modo);
+      renderizarCarrinho();
+    });
+  });
+
+  container.querySelectorAll('.input-qtd-carrinho').forEach((input) => {
+    input.addEventListener('change', () => {
+      atualizarQuantidade(input.dataset.chave, Math.max(1, Number(input.value) || 1), modo);
+      renderizarCarrinho();
+    });
+  });
+
+  container.querySelectorAll('.carrinho-item__remover').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      removerDoCarrinho(btn.dataset.chave, modo);
+      renderizarCarrinho();
+    });
+  });
+}
+
+renderizarCarrinho();
+</script>
+</body>
+</html>

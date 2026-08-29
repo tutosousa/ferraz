@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ Admin — Visão geral</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__logo">
+      <img src="../assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ Admin</span>
+    </div>
+    <ul class="admin-sidebar__nav" id="admin-nav"></ul>
+    <div class="admin-sidebar__rodape">
+      <p class="texto-suave" style="font-size:0.85rem; margin-bottom:8px;">Olá, <strong id="admin-nome"></strong></p>
+      <button class="btn btn-secundario btn-bloco" id="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topo">
+      <div>
+        <h1 style="margin-bottom:2px;">Visão geral</h1>
+        <p class="texto-suave">Resumo dos últimos 30 dias</p>
+      </div>
+      <a href="../index.html" target="_blank" class="btn btn-secundario">Ver loja virtual</a>
+    </div>
+
+    <div class="admin-cards-resumo" id="cards-resumo">
+      <p class="carregando">Carregando resumo...</p>
+    </div>
+
+    <div class="admin-painel" style="margin-bottom:32px;">
+      <div class="admin-painel__cabecalho">
+        <h3 style="margin:0;">Pedidos recentes</h3>
+        <a href="pedidos.html" class="link-acao">Ver todos os pedidos →</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="tabela-admin">
+          <thead>
+            <tr><th>Nº do pedido</th><th>Cliente</th><th>Total</th><th>Status</th><th>Data</th></tr>
+          </thead>
+          <tbody id="tabela-pedidos-recentes">
+            <tr><td colspan="5">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/cart.js"></script>
+<script src="js/admin.js"></script>
+<script>
+exigirLoginAdmin();
+montarSidebarAdmin('dashboard');
+
+function formatarData(dataStr) {
+  return new Date(dataStr).toLocaleDateString('pt-BR');
+}
+
+async function carregarResumo() {
+  const container = document.getElementById('cards-resumo');
+  try {
+    const resumo = await apiFetchAdmin('/financeiro/resumo');
+    const lucroPositivo = resumo.lucro >= 0;
+
+    container.innerHTML = `
+      <div class="admin-card">
+        <div class="admin-card__label">Faturamento (30 dias)</div>
+        <div class="admin-card__valor">${formatarPreco(resumo.faturamento)}</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card__label">Custos (30 dias)</div>
+        <div class="admin-card__valor">${formatarPreco(resumo.custos)}</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card__label">Lucro (30 dias)</div>
+        <div class="admin-card__valor ${lucroPositivo ? 'admin-card__valor--positivo' : 'admin-card__valor--negativo'}">
+          ${formatarPreco(resumo.lucro)}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function carregarPedidosRecentes() {
+  const tbody = document.getElementById('tabela-pedidos-recentes');
+  try {
+    const pedidos = await apiFetchAdmin('/pedidos/admin/all');
+    const recentes = pedidos.slice(0, 8);
+
+    if (recentes.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5">Nenhum pedido ainda.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = recentes.map((p) => `
+      <tr>
+        <td>${escapeHtml(p.numero_pedido)}</td>
+        <td>${escapeHtml(p.cliente_nome)}</td>
+        <td>${formatarPreco(p.total)}</td>
+        <td><span class="${classeBadgeStatus(p.status)}">${escapeHtml(p.status)}</span></td>
+        <td>${formatarData(p.criado_em)}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+carregarResumo();
+carregarPedidosRecentes();
+</script>
+</body>
+</html>

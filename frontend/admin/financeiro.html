@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ Admin — Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__logo">
+      <img src="../assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ Admin</span>
+    </div>
+    <ul class="admin-sidebar__nav" id="admin-nav"></ul>
+    <div class="admin-sidebar__rodape">
+      <p class="texto-suave" style="font-size:0.85rem; margin-bottom:8px;">Olá, <strong id="admin-nome"></strong></p>
+      <button class="btn btn-secundario btn-bloco" id="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topo">
+      <div>
+        <h1 style="margin-bottom:2px;">Financeiro</h1>
+        <p class="texto-suave">Faturamento, custos e lucro por período</p>
+      </div>
+    </div>
+
+    <div class="admin-painel" style="margin-bottom:28px;">
+      <div class="admin-painel__cabecalho">
+        <h3 style="margin:0;">Filtrar por data</h3>
+      </div>
+      <div style="padding:20px 24px; display:flex; gap:16px; flex-wrap:wrap; align-items:end;">
+        <div class="campo" style="margin:0;">
+          <label for="data_inicio">De</label>
+          <input type="date" id="data_inicio">
+        </div>
+        <div class="campo" style="margin:0;">
+          <label for="data_fim">Até</label>
+          <input type="date" id="data_fim">
+        </div>
+        <button class="btn btn-primario" id="btn-filtrar">Aplicar filtro</button>
+      </div>
+    </div>
+
+    <div class="admin-cards-resumo" id="cards-financeiro">
+      <p class="carregando">Carregando...</p>
+    </div>
+
+    <div class="admin-painel" style="margin-bottom:28px;">
+      <div class="admin-painel__cabecalho"><h3 style="margin:0;">Faturamento semanal</h3></div>
+      <div style="overflow-x:auto;">
+        <table class="tabela-admin">
+          <thead><tr><th>Semana (início)</th><th>Faturamento</th></tr></thead>
+          <tbody id="tabela-semanal"><tr><td colspan="2">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="admin-painel" style="margin-bottom:28px;">
+      <div class="admin-painel__cabecalho"><h3 style="margin:0;">Faturamento mensal</h3></div>
+      <div style="overflow-x:auto;">
+        <table class="tabela-admin">
+          <thead><tr><th>Mês</th><th>Faturamento</th></tr></thead>
+          <tbody id="tabela-mensal"><tr><td colspan="2">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="admin-painel">
+      <div class="admin-painel__cabecalho">
+        <h3 style="margin:0;">Lançamentos manuais (despesas e receitas extras)</h3>
+        <button class="btn btn-secundario" id="btn-novo-lancamento">+ Novo lançamento</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="tabela-admin">
+          <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th></th></tr></thead>
+          <tbody id="tabela-lancamentos"><tr><td colspan="5">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal de novo lançamento -->
+<div class="modal-fundo" id="modal-lancamento" style="display:none;">
+  <div class="modal-caixa" style="max-width:440px;">
+    <h2>Novo lançamento</h2>
+    <form id="form-lancamento">
+      <div class="campo">
+        <label for="l_tipo">Tipo</label>
+        <select id="l_tipo" required>
+          <option value="despesa">Despesa</option>
+          <option value="receita">Receita</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="l_descricao">Descrição</label>
+        <input type="text" id="l_descricao" required placeholder="Ex: Aluguel do ateliê">
+      </div>
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="l_valor">Valor (R$)</label>
+          <input type="number" id="l_valor" step="0.01" min="0" required>
+        </div>
+        <div class="campo">
+          <label for="l_data">Data</label>
+          <input type="date" id="l_data" required>
+        </div>
+      </div>
+      <div id="alerta-modal-lancamento"></div>
+      <div class="acoes-linha" style="margin-top:16px;">
+        <button type="submit" class="btn btn-primario">Salvar</button>
+        <button type="button" class="btn btn-secundario" id="btn-cancelar-lancamento">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/cart.js"></script>
+<script src="js/admin.js"></script>
+<script>
+exigirLoginAdmin();
+montarSidebarAdmin('financeiro');
+
+function hojeISO(offsetDias = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDias);
+  return d.toISOString().slice(0, 10);
+}
+
+document.getElementById('data_inicio').value = hojeISO(-30);
+document.getElementById('data_fim').value = hojeISO(0);
+document.getElementById('l_data').value = hojeISO(0);
+
+async function carregarResumo() {
+  const container = document.getElementById('cards-financeiro');
+  const inicio = document.getElementById('data_inicio').value;
+  const fim = document.getElementById('data_fim').value;
+
+  try {
+    const resumo = await apiFetchAdmin(`/financeiro/resumo?inicio=${inicio}&fim=${fim}`);
+    const lucroPositivo = resumo.lucro >= 0;
+
+    container.innerHTML = `
+      <div class="admin-card">
+        <div class="admin-card__label">Faturamento no período</div>
+        <div class="admin-card__valor">${formatarPreco(resumo.faturamento)}</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card__label">Custos no período</div>
+        <div class="admin-card__valor">${formatarPreco(resumo.custos)}</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card__label">Lucro no período</div>
+        <div class="admin-card__valor ${lucroPositivo ? 'admin-card__valor--positivo' : 'admin-card__valor--negativo'}">
+          ${formatarPreco(resumo.lucro)}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function carregarSemanal() {
+  const tbody = document.getElementById('tabela-semanal');
+  try {
+    const semanas = await apiFetchAdmin('/financeiro/semanal');
+    if (semanas.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="2">Sem dados suficientes ainda.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = semanas.map((s) => `
+      <tr>
+        <td>${new Date(s.inicio_semana).toLocaleDateString('pt-BR')}</td>
+        <td>${formatarPreco(s.faturamento)}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="2">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function carregarMensal() {
+  const tbody = document.getElementById('tabela-mensal');
+  try {
+    const meses = await apiFetchAdmin('/financeiro/mensal');
+    if (meses.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="2">Sem dados suficientes ainda.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = meses.map((m) => `
+      <tr>
+        <td>${m.mes}</td>
+        <td>${formatarPreco(m.faturamento)}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="2">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function carregarLancamentos() {
+  const tbody = document.getElementById('tabela-lancamentos');
+  try {
+    const lancamentos = await apiFetchAdmin('/financeiro/lancamentos');
+    if (lancamentos.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5">Nenhum lançamento manual ainda.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = lancamentos.map((l) => `
+      <tr>
+        <td>${new Date(l.data).toLocaleDateString('pt-BR')}</td>
+        <td><span class="badge ${l.tipo === 'receita' ? 'badge-entregue' : 'badge-cancelado'}">${l.tipo}</span></td>
+        <td>${escapeHtml(l.descricao)}</td>
+        <td>${formatarPreco(l.valor)}</td>
+        <td><button class="link-acao link-acao--perigo" data-remover="${l.id}">Remover</button></td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('[data-remover]').forEach((btn) => {
+      btn.addEventListener('click', () => removerLancamento(btn.dataset.remover));
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function removerLancamento(id) {
+  if (!confirm('Remover este lançamento?')) return;
+  try {
+    await apiFetchAdmin(`/financeiro/lancamentos/${id}`, { method: 'DELETE' });
+    carregarLancamentos();
+    carregarResumo();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById('btn-filtrar').addEventListener('click', carregarResumo);
+
+document.getElementById('btn-novo-lancamento').addEventListener('click', () => {
+  document.getElementById('form-lancamento').reset();
+  document.getElementById('l_data').value = hojeISO(0);
+  document.getElementById('alerta-modal-lancamento').innerHTML = '';
+  document.getElementById('modal-lancamento').style.display = 'flex';
+});
+document.getElementById('btn-cancelar-lancamento').addEventListener('click', () => {
+  document.getElementById('modal-lancamento').style.display = 'none';
+});
+
+document.getElementById('form-lancamento').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertaEl = document.getElementById('alerta-modal-lancamento');
+  try {
+    await apiFetchAdmin('/financeiro/lancamentos', {
+      method: 'POST',
+      body: JSON.stringify({
+        tipo: document.getElementById('l_tipo').value,
+        descricao: document.getElementById('l_descricao').value,
+        valor: document.getElementById('l_valor').value,
+        data: document.getElementById('l_data').value,
+      }),
+    });
+    document.getElementById('modal-lancamento').style.display = 'none';
+    carregarLancamentos();
+    carregarResumo();
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+carregarResumo();
+carregarSemanal();
+carregarMensal();
+carregarLancamentos();
+</script>
+</body>
+</html>

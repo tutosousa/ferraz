@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ — Entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="index.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="carrinho.html" class="carrinho-link">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="pagina-auth">
+  <div class="resumo-pedido" id="etapa-senha">
+    <h1>Entrar na minha conta</h1>
+    <p class="texto-suave">Acesse para acompanhar seus pedidos e agilizar suas compras.</p>
+
+    <div id="alerta-login"></div>
+
+    <form id="form-login">
+      <div class="campo">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" required autocomplete="username">
+      </div>
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <div class="campo-senha">
+          <input type="password" id="senha" required autocomplete="current-password">
+          <button type="button" class="campo-senha__toggle" data-alvo="senha" aria-label="Mostrar senha"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <p style="text-align:right; margin-top:6px;"><a href="esqueci-senha.html" style="font-size:0.85rem;">Esqueci minha senha</a></p>
+      </div>
+      <button type="submit" class="btn btn-primario btn-bloco btn-grande" id="btn-entrar">Entrar</button>
+    </form>
+
+    <p class="texto-suave" style="text-align:center; margin-top:20px;">
+      Ainda não tem conta? <a href="cadastro.html">Criar conta</a>
+    </p>
+  </div>
+
+  <div class="resumo-pedido" id="etapa-codigo-login" style="display:none;">
+    <h1>Confirme sua entrada</h1>
+    <p class="texto-suave">Por segurança, enviamos um código de acesso para o seu e-mail.</p>
+
+    <div id="alerta-codigo-login"></div>
+
+    <form id="form-codigo-login">
+      <div class="campo">
+        <label for="codigo_login">Código de acesso</label>
+        <input type="text" id="codigo_login" required maxlength="6" inputmode="numeric" placeholder="000000" style="text-align:center; font-size:1.4rem; letter-spacing:0.3em;">
+      </div>
+      <button type="submit" class="btn btn-primario btn-bloco btn-grande" id="btn-confirmar-login">Confirmar e entrar</button>
+    </form>
+
+    <p class="texto-suave" style="text-align:center; margin-top:20px;">
+      Não recebeu? <button type="button" id="btn-reenviar-login" style="background:none; border:none; color:var(--cor-primaria-escura); font-weight:600; cursor:pointer;">Reenviar código</button>
+    </p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container"><p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/customer.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+
+if (obterTokenCliente()) {
+  window.location.href = 'conta.html';
+}
+
+if (new URLSearchParams(window.location.search).get('confirmado') === '1') {
+  document.getElementById('alerta-login').innerHTML =
+    `<div class="alerta alerta-sucesso">E-mail confirmado! Faça login para continuar.</div>`;
+}
+if (new URLSearchParams(window.location.search).get('senha_redefinida') === '1') {
+  document.getElementById('alerta-login').innerHTML =
+    `<div class="alerta alerta-sucesso">Senha redefinida com sucesso! Faça login com a nova senha.</div>`;
+}
+
+let clienteIdPendente = null;
+
+document.getElementById('form-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btn-entrar');
+  const alertaEl = document.getElementById('alerta-login');
+  alertaEl.innerHTML = '';
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+
+  try {
+    const resultado = await apiFetch('/clientes/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('email').value,
+        senha: document.getElementById('senha').value,
+      }),
+    });
+
+    clienteIdPendente = resultado.cliente_id;
+    document.getElementById('etapa-senha').style.display = 'none';
+    document.getElementById('etapa-codigo-login').style.display = 'block';
+
+    if (resultado.codigo_simulado) {
+      document.getElementById('alerta-codigo-login').innerHTML =
+        `<div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">
+          Modo de teste (sem e-mail configurado): seu código é <strong>${resultado.codigo_simulado}</strong>
+        </div>`;
+    }
+  } catch (err) {
+    if (err.precisa_confirmar_cadastro) {
+      window.location.href = `verificar-cadastro.html?cliente_id=${err.cliente_id}`;
+      return;
+    }
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+});
+
+document.getElementById('form-codigo-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btn-confirmar-login');
+  const alertaEl = document.getElementById('alerta-codigo-login');
+  btn.disabled = true;
+  btn.textContent = 'Confirmando...';
+
+  try {
+    const resultado = await apiFetch('/clientes/login/verificar', {
+      method: 'POST',
+      body: JSON.stringify({
+        cliente_id: clienteIdPendente,
+        codigo: document.getElementById('codigo_login').value,
+      }),
+    });
+
+    salvarSessaoCliente(resultado.token, resultado.cliente);
+    const redirecionarPara = new URLSearchParams(window.location.search).get('depois') || 'conta.html';
+    window.location.href = redirecionarPara;
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Confirmar e entrar';
+  }
+});
+
+document.getElementById('btn-reenviar-login').addEventListener('click', async () => {
+  const alertaEl = document.getElementById('alerta-codigo-login');
+  try {
+    const resultado = await apiFetch('/clientes/login/reenviar-codigo', {
+      method: 'POST',
+      body: JSON.stringify({ cliente_id: clienteIdPendente }),
+    });
+    let msg = `<div class="alerta alerta-sucesso">Novo código enviado!</div>`;
+    if (resultado.codigo_simulado) {
+      msg = `<div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">Modo de teste: novo código é <strong>${resultado.codigo_simulado}</strong></div>`;
+    }
+    alertaEl.innerHTML = msg;
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+});
+</script>
+</body>
+</html>

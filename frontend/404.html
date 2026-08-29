@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Página não encontrada — FERRAZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="index.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="carrinho.html" class="carrinho-link">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="container secao pagina-404">
+  <div class="pagina-404__conteudo">
+    <span class="pagina-404__numero">404</span>
+    <h1>Essa página saiu de linha.</h1>
+    <p class="texto-suave">
+      A página que você tentou acessar não existe, foi movida, ou o endereço foi digitado errado.
+    </p>
+    <div class="pagina-404__acoes">
+      <a href="index.html" class="btn btn-primario btn-grande">Voltar para a loja</a>
+      <a href="atacado.html" class="btn btn-secundario btn-grande">Ver atacado</a>
+    </div>
+    <p class="texto-suave" style="margin-top:32px; font-size:0.9rem;">
+      Precisa de ajuda? <a href="https://wa.me/558196336445" target="_blank" rel="noopener">Fala com a gente no WhatsApp</a>.
+    </p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

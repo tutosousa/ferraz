@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ Admin — Recuperar senha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<div class="tela-login">
+  <div class="tela-login__caixa" id="etapa-email">
+    <div class="tela-login__logo">
+      <img src="../assets/logo.png" alt="Logo FERRAZ">
+      <h1 style="margin:0; font-size:1.3rem;">Recuperar senha do painel</h1>
+    </div>
+    <p class="texto-suave" style="text-align:center; margin-bottom:20px;">Digite o e-mail da sua conta de administrador.</p>
+
+    <div id="alerta-email"></div>
+
+    <form id="form-email">
+      <div class="campo">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" required autocomplete="username">
+      </div>
+      <button type="submit" class="btn btn-primario btn-bloco btn-grande" id="btn-enviar">Enviar código</button>
+    </form>
+
+    <p class="texto-suave" style="text-align:center; margin-top:20px;">
+      <a href="login.html">← Voltar para o login</a>
+    </p>
+  </div>
+
+  <div class="tela-login__caixa" id="etapa-redefinir" style="display:none;">
+    <div class="tela-login__logo">
+      <img src="../assets/logo.png" alt="Logo FERRAZ">
+      <h1 style="margin:0; font-size:1.3rem;">Criar nova senha</h1>
+    </div>
+
+    <div id="alerta-redefinir"></div>
+
+    <form id="form-redefinir">
+      <div class="campo">
+        <label for="codigo">Código recebido por e-mail</label>
+        <input type="text" id="codigo" required maxlength="6" inputmode="numeric" placeholder="000000" style="text-align:center; font-size:1.4rem; letter-spacing:0.3em;">
+      </div>
+      <div class="campo">
+        <label for="nova_senha">Nova senha</label>
+        <div class="campo-senha">
+          <input type="password" id="nova_senha" required minlength="6" autocomplete="new-password">
+          <button type="button" class="campo-senha__toggle" data-alvo="nova_senha" aria-label="Mostrar senha"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <div class="medidor-senha" id="medidor-senha" style="display:none;">
+          <div class="medidor-senha__barra"><div class="medidor-senha__preenchimento" id="medidor-preenchimento"></div></div>
+          <span id="medidor-texto"></span>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="confirmar_nova_senha">Confirmar nova senha</label>
+        <div class="campo-senha">
+          <input type="password" id="confirmar_nova_senha" required minlength="6" autocomplete="new-password">
+          <button type="button" class="campo-senha__toggle" data-alvo="confirmar_nova_senha" aria-label="Mostrar senha"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <p class="texto-suave" style="font-size:0.8rem; margin-top:4px;" id="texto-confirmar"></p>
+      </div>
+      <button type="submit" class="btn btn-primario btn-bloco btn-grande" id="btn-redefinir">Redefinir senha</button>
+    </form>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+let emailAtual = '';
+
+function avaliarForcaSenha(senha) {
+  let pontos = 0;
+  if (senha.length >= 6) pontos++;
+  if (senha.length >= 10) pontos++;
+  if (/[A-Z]/.test(senha) && /[a-z]/.test(senha)) pontos++;
+  if (/[0-9]/.test(senha)) pontos++;
+  if (/[^A-Za-z0-9]/.test(senha)) pontos++;
+  if (pontos <= 1) return { texto: 'Senha fraca', cor: '#c0392b', largura: '33%' };
+  if (pontos <= 3) return { texto: 'Senha média', cor: '#d99a1b', largura: '66%' };
+  return { texto: 'Senha forte', cor: '#2e7d5b', largura: '100%' };
+}
+
+document.getElementById('nova_senha').addEventListener('input', (e) => {
+  const medidor = document.getElementById('medidor-senha');
+  if (!e.target.value) { medidor.style.display = 'none'; return; }
+  medidor.style.display = 'block';
+  const r = avaliarForcaSenha(e.target.value);
+  document.getElementById('medidor-preenchimento').style.width = r.largura;
+  document.getElementById('medidor-preenchimento').style.background = r.cor;
+  document.getElementById('medidor-texto').textContent = r.texto;
+  document.getElementById('medidor-texto').style.color = r.cor;
+});
+
+function conferirSenhasIguais() {
+  const s1 = document.getElementById('nova_senha').value;
+  const s2 = document.getElementById('confirmar_nova_senha').value;
+  const texto = document.getElementById('texto-confirmar');
+  if (!s2) { texto.textContent = ''; return true; }
+  if (s1 === s2) { texto.textContent = '✓ As senhas coincidem'; texto.style.color = '#2e7d5b'; return true; }
+  texto.textContent = 'As senhas não coincidem'; texto.style.color = '#c0392b'; return false;
+}
+document.getElementById('confirmar_nova_senha').addEventListener('input', conferirSenhasIguais);
+
+document.getElementById('form-email').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btn-enviar');
+  const alertaEl = document.getElementById('alerta-email');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  emailAtual = document.getElementById('email').value;
+
+  try {
+    const resultado = await apiFetch('/auth/esqueci-senha', {
+      method: 'POST',
+      body: JSON.stringify({ email: emailAtual }),
+    });
+
+    document.getElementById('etapa-email').style.display = 'none';
+    document.getElementById('etapa-redefinir').style.display = 'block';
+
+    if (resultado.codigo_simulado) {
+      document.getElementById('alerta-redefinir').innerHTML =
+        `<div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">Modo de teste: seu código é <strong>${resultado.codigo_simulado}</strong></div>`;
+    } else {
+      document.getElementById('alerta-redefinir').innerHTML =
+        `<div class="alerta alerta-sucesso">Se este e-mail tiver conta, um código foi enviado.</div>`;
+    }
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar código';
+  }
+});
+
+document.getElementById('form-redefinir').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertaEl = document.getElementById('alerta-redefinir');
+  const btn = document.getElementById('btn-redefinir');
+
+  if (!conferirSenhasIguais()) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">As senhas não coincidem.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    await apiFetch('/auth/redefinir-senha', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: emailAtual,
+        codigo: document.getElementById('codigo').value,
+        nova_senha: document.getElementById('nova_senha').value,
+      }),
+    });
+    window.location.href = 'login.html?senha_redefinida=1';
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Redefinir senha';
+  }
+});
+</script>
+</body>
+</html>

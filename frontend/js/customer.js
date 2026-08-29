@@ -1,0 +1,85 @@
+// Funções compartilhadas de autenticação de CLIENTES da loja (compradores),
+// separado por completo do login do painel administrativo.
+
+const CLIENTE_TOKEN_KEY = 'ferraz_cliente_token';
+const CLIENTE_INFO_KEY = 'ferraz_cliente_info';
+
+function obterTokenCliente() {
+  return localStorage.getItem(CLIENTE_TOKEN_KEY);
+}
+
+function salvarSessaoCliente(token, cliente) {
+  localStorage.setItem(CLIENTE_TOKEN_KEY, token);
+  localStorage.setItem(CLIENTE_INFO_KEY, JSON.stringify(cliente));
+}
+
+function obterClienteLogado() {
+  try {
+    return JSON.parse(localStorage.getItem(CLIENTE_INFO_KEY));
+  } catch (e) {
+    return null;
+  }
+}
+
+function logoutCliente() {
+  localStorage.removeItem(CLIENTE_TOKEN_KEY);
+  localStorage.removeItem(CLIENTE_INFO_KEY);
+  window.location.href = 'index.html';
+}
+
+// Wrapper de fetch que inclui o header Authorization com o token do cliente
+// (usado nas telas de perfil e "meus pedidos").
+async function apiFetchCliente(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      ...(options.body && !(options.body instanceof FormData)
+        ? { 'Content-Type': 'application/json' }
+        : {}),
+      Authorization: `Bearer ${obterTokenCliente()}`,
+      ...(options.headers || {}),
+    },
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (e) {
+    /* sem corpo */
+  }
+
+  if (response.status === 401) {
+    logoutCliente();
+    throw new Error('Sessão expirada. Faça login novamente.');
+  }
+
+  if (!response.ok) {
+    throw new Error((data && data.error) || 'Erro ao comunicar com o servidor.');
+  }
+
+  return data;
+}
+
+// Atualiza o link "Entrar" do cabeçalho para "Olá, Fulano" / "Minha conta"
+// quando o visitante já estiver logado como cliente.
+function atualizarLinkConta(elementId) {
+  const link = document.getElementById(elementId);
+  if (!link) return;
+  const cliente = obterClienteLogado();
+  if (cliente && obterTokenCliente()) {
+    const primeiroNome = cliente.nome ? cliente.nome.split(' ')[0] : 'Minha conta';
+    link.textContent = `Olá, ${primeiroNome}`;
+    link.href = 'conta.html';
+  } else {
+    link.textContent = 'Entrar';
+    link.href = 'login.html';
+  }
+}
+
+// Redireciona para o login se o visitante não estiver logado. Usado no
+// topo da página "conta.html".
+function exigirLoginCliente() {
+  if (!obterTokenCliente()) {
+    window.location.href = 'login.html';
+  }
+}

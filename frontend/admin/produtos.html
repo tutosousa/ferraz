@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ Admin — Produtos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__logo">
+      <img src="../assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ Admin</span>
+    </div>
+    <ul class="admin-sidebar__nav" id="admin-nav"></ul>
+    <div class="admin-sidebar__rodape">
+      <p class="texto-suave" style="font-size:0.85rem; margin-bottom:8px;">Olá, <strong id="admin-nome"></strong></p>
+      <button class="btn btn-secundario btn-bloco" id="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topo">
+      <div>
+        <h1 style="margin-bottom:2px;">Produtos</h1>
+        <p class="texto-suave">Gerencie o catálogo, preços e estoque</p>
+      </div>
+      <button class="btn btn-primario btn-grande" id="btn-novo-produto">+ Novo produto</button>
+    </div>
+
+    <div id="alerta-produtos"></div>
+
+    <div class="admin-painel">
+      <div style="overflow-x:auto;">
+        <table class="tabela-admin">
+          <thead>
+            <tr>
+              <th>Produto</th><th>Categoria</th><th>Custo</th><th>Varejo</th>
+              <th>Atacado</th><th>Estoque</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tabela-produtos">
+            <tr><td colspan="8">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal de criação/edição de produto -->
+<div class="modal-fundo" id="modal-produto" style="display:none;">
+  <div class="modal-caixa">
+    <h2 id="modal-titulo">Novo produto</h2>
+    <form id="form-produto">
+      <input type="hidden" id="produto_id">
+
+      <div class="campo">
+        <label for="p_nome">Nome do produto</label>
+        <input type="text" id="p_nome" required>
+      </div>
+
+      <div class="campo">
+        <label for="p_categoria">Categoria</label>
+        <select id="p_categoria" required></select>
+      </div>
+
+      <div class="campo">
+        <label for="p_descricao">Descrição</label>
+        <textarea id="p_descricao" rows="3" placeholder='Ex: "No atacado, qualquer peça sai por R$ 35,00."'></textarea>
+      </div>
+
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="p_custo">Preço de custo (R$)</label>
+          <input type="number" id="p_custo" step="0.01" min="0" required>
+        </div>
+        <div class="campo">
+          <label for="p_varejo">Preço de varejo (R$)</label>
+          <input type="number" id="p_varejo" step="0.01" min="0" required>
+        </div>
+      </div>
+
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="p_atacado">Preço de atacado (R$)</label>
+          <input type="number" id="p_atacado" step="0.01" min="0">
+        </div>
+        <div class="campo">
+          <label for="p_desconto">Desconto no atacado (%)</label>
+          <input type="number" id="p_desconto" step="0.01" min="0" max="100">
+        </div>
+      </div>
+
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="p_qtd_minima">Qtd. mínima p/ atacado</label>
+          <input type="number" id="p_qtd_minima" min="1" value="50">
+        </div>
+        <div class="campo">
+          <label for="p_estoque">Estoque (unidades)</label>
+          <input type="number" id="p_estoque" min="0" required>
+        </div>
+      </div>
+
+      <label>Peso e dimensões da embalagem (usados para calcular o frete)</label>
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="p_peso" style="font-weight:400; font-size:0.85rem;">Peso (kg)</label>
+          <input type="number" id="p_peso" min="0.05" step="0.01" value="0.3">
+        </div>
+        <div class="campo">
+          <label for="p_altura" style="font-weight:400; font-size:0.85rem;">Altura (cm)</label>
+          <input type="number" id="p_altura" min="1" value="5">
+        </div>
+      </div>
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="p_largura" style="font-weight:400; font-size:0.85rem;">Largura (cm)</label>
+          <input type="number" id="p_largura" min="1" value="25">
+        </div>
+        <div class="campo">
+          <label for="p_comprimento" style="font-weight:400; font-size:0.85rem;">Comprimento (cm)</label>
+          <input type="number" id="p_comprimento" min="1" value="35">
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Fotos do produto</label>
+        <div class="upload-fotos">
+          <label for="p_imagem" class="upload-fotos__botao">
+            <span class="upload-fotos__icone">📷</span>
+            Escolher fotos
+          </label>
+          <input type="file" id="p_imagem" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+          <span class="upload-fotos__status" id="upload-fotos-status">Nenhuma foto selecionada</span>
+        </div>
+        <p class="texto-suave" style="font-size:0.8rem; margin-top:4px;">
+          Você pode selecionar várias fotos de uma vez (segure Ctrl ou Shift para escolher mais de uma).
+          Ao editar um produto, novas fotos são ADICIONADAS às já existentes.
+        </p>
+      </div>
+      <div id="galeria-atual-produto" style="display:none;">
+        <label>Fotos já cadastradas</label>
+        <p class="texto-suave" style="font-size:0.8rem; margin-bottom:6px;">Escolha a cor de cada foto — assim, quando o cliente selecionar aquela cor na loja, essas fotos aparecem automaticamente.</p>
+        <div id="galeria-atual-lista" class="galeria-admin-lista"></div>
+      </div>
+
+      <div id="secao-variacoes" style="display:none;">
+        <hr style="margin:24px 0; border:none; border-top:1px solid var(--cor-linha);">
+
+        <label>Cores disponíveis</label>
+        <div id="lista-cores" class="lista-tags-admin"></div>
+        <div class="acoes-linha" style="margin-top:10px; flex-wrap:wrap;">
+          <input type="text" id="nova_cor_nome" placeholder="Nome da cor (ex: Verde)" style="flex:1; min-width:140px; padding:10px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
+          <input type="color" id="nova_cor_hex" value="#5EC5B5" title="Cor de referência" style="width:44px; height:40px; border:1.5px solid var(--cor-linha); border-radius:4px; padding:2px; cursor:pointer;">
+          <button type="button" class="btn btn-secundario" id="btn-add-cor">+ Adicionar cor</button>
+        </div>
+
+        <label style="display:block; margin-top:22px;">Tamanhos disponíveis</label>
+        <div id="lista-tamanhos" class="lista-tags-admin"></div>
+        <div class="acoes-linha" style="margin-top:10px;">
+          <input type="text" id="novo_tamanho" placeholder="Ex: PP, P, M, G, GG" style="flex:1; padding:10px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
+          <button type="button" class="btn btn-secundario" id="btn-add-tamanho">+ Adicionar tamanho</button>
+        </div>
+      </div>
+      <p class="texto-suave" id="aviso-salve-primeiro" style="font-size:0.85rem; margin-top:16px;">
+        Salve o produto primeiro; depois de criado, você pode voltar aqui e editar pra adicionar cores e tamanhos.
+      </p>
+
+      <div id="alerta-modal"></div>
+
+      <div class="acoes-linha" style="margin-top:20px;">
+        <button type="submit" class="btn btn-primario">Salvar produto</button>
+        <button type="button" class="btn btn-secundario" id="btn-cancelar-modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/cart.js"></script>
+<script src="js/admin.js"></script>
+<script>
+exigirLoginAdmin();
+montarSidebarAdmin('produtos');
+
+let categoriasCache = [];
+
+async function carregarCategoriasSelect() {
+  categoriasCache = await apiFetch('/categorias');
+  const select = document.getElementById('p_categoria');
+  select.innerHTML = categoriasCache
+    .map((c) => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`)
+    .join('');
+}
+
+async function carregarProdutos() {
+  const tbody = document.getElementById('tabela-produtos');
+  try {
+    const produtos = await apiFetchAdmin('/produtos/admin/all');
+
+    if (produtos.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8">Nenhum produto cadastrado ainda.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = produtos.map((p) => `
+      <tr>
+        <td>${escapeHtml(p.nome)}</td>
+        <td>${escapeHtml(p.categoria)}</td>
+        <td>${formatarPreco(p.preco_custo)}</td>
+        <td>${formatarPreco(p.preco_varejo)}</td>
+        <td>${p.preco_atacado ? formatarPreco(p.preco_atacado) : '—'}</td>
+        <td>${p.estoque}</td>
+        <td>${p.ativo ? '<span class="badge badge-entregue">Ativo</span>' : '<span class="badge badge-cancelado">Inativo</span>'}</td>
+        <td>
+          <div class="acoes-linha">
+            <button class="link-acao" data-editar="${p.id}">Editar</button>
+            <button class="link-acao link-acao--perigo" data-remover="${p.id}">Remover</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('[data-editar]').forEach((btn) => {
+      btn.addEventListener('click', () => abrirModalEdicao(btn.dataset.editar));
+    });
+    tbody.querySelectorAll('[data-remover]').forEach((btn) => {
+      btn.addEventListener('click', () => removerProduto(btn.dataset.remover));
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function abrirModalNovo() {
+  document.getElementById('modal-titulo').textContent = 'Novo produto';
+  document.getElementById('form-produto').reset();
+  document.getElementById('produto_id').value = '';
+  document.getElementById('p_qtd_minima').value = 50;
+  document.getElementById('alerta-modal').innerHTML = '';
+  document.getElementById('galeria-atual-produto').style.display = 'none';
+  document.getElementById('secao-variacoes').style.display = 'none';
+  document.getElementById('aviso-salve-primeiro').style.display = 'block';
+  document.getElementById('upload-fotos-status').textContent = 'Nenhuma foto selecionada';
+  document.getElementById('upload-fotos-status').classList.remove('upload-fotos__status--ativo');
+  document.getElementById('modal-produto').style.display = 'flex';
+}
+
+async function abrirModalEdicao(produtoId) {
+  document.getElementById('modal-titulo').textContent = 'Editar produto';
+  document.getElementById('alerta-modal').innerHTML = '';
+  document.getElementById('upload-fotos-status').textContent = 'Nenhuma foto nova selecionada';
+  document.getElementById('upload-fotos-status').classList.remove('upload-fotos__status--ativo');
+  document.getElementById('secao-variacoes').style.display = 'block';
+  document.getElementById('aviso-salve-primeiro').style.display = 'none';
+  document.getElementById('modal-produto').style.display = 'flex';
+
+  try {
+    const produto = await apiFetchAdmin(`/produtos/admin/${produtoId}`);
+    document.getElementById('produto_id').value = produto.id;
+    document.getElementById('p_nome').value = produto.nome;
+    document.getElementById('p_categoria').value = produto.categoria_id;
+    document.getElementById('p_descricao').value = produto.descricao || '';
+    document.getElementById('p_custo').value = produto.preco_custo;
+    document.getElementById('p_varejo').value = produto.preco_varejo;
+    document.getElementById('p_atacado').value = produto.preco_atacado || '';
+    document.getElementById('p_desconto').value = produto.desconto_atacado_percentual || '';
+    document.getElementById('p_qtd_minima').value = produto.quantidade_minima_atacado || 50;
+    document.getElementById('p_estoque').value = produto.estoque;
+    document.getElementById('p_peso').value = produto.peso_kg || 0.3;
+    document.getElementById('p_altura').value = produto.altura_cm || 5;
+    document.getElementById('p_largura').value = produto.largura_cm || 25;
+    document.getElementById('p_comprimento').value = produto.comprimento_cm || 35;
+
+    renderizarGaleriaAtual(produto);
+    renderizarCores(produto.cores || []);
+    renderizarTamanhos(produto.tamanhos || []);
+  } catch (err) {
+    document.getElementById('alerta-modal').innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function recarregarProdutoNoModal() {
+  const produtoId = document.getElementById('produto_id').value;
+  const produto = await apiFetchAdmin(`/produtos/admin/${produtoId}`);
+  renderizarGaleriaAtual(produto);
+  renderizarCores(produto.cores || []);
+  return produto;
+}
+
+function renderizarGaleriaAtual(produto) {
+  const container = document.getElementById('galeria-atual-produto');
+  const lista = document.getElementById('galeria-atual-lista');
+  const imagens = produto.imagens || [];
+  const cores = produto.cores || [];
+
+  if (imagens.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+
+  const opcoesCores = (corAtualId) => `
+    <option value="">Sem cor (geral)</option>
+    ${cores.map((c) => `<option value="${c.id}" ${c.id === corAtualId ? 'selected' : ''}>${escapeHtml(c.nome)}</option>`).join('')}
+  `;
+
+  lista.innerHTML = imagens.map((img) => `
+    <div class="galeria-admin-item">
+      <img src="${BACKEND_ORIGIN}${img.imagem_url}" alt="Foto do produto">
+      <button type="button" class="galeria-admin-item__remover" data-imagem-id="${img.id}" title="Remover esta foto">✕</button>
+      ${cores.length > 0 ? `
+        <select class="galeria-admin-item__cor" data-imagem-id="${img.id}">
+          ${opcoesCores(img.cor_id)}
+        </select>
+      ` : ''}
+    </div>
+  `).join('');
+
+  lista.querySelectorAll('.galeria-admin-item__remover').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remover esta foto do produto?')) return;
+      try {
+        const produtoId = document.getElementById('produto_id').value;
+        await apiFetchAdmin(`/produtos/admin/${produtoId}/imagens/${btn.dataset.imagemId}`, {
+          method: 'DELETE',
+        });
+        await recarregarProdutoNoModal();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+
+  lista.querySelectorAll('.galeria-admin-item__cor').forEach((select) => {
+    select.addEventListener('change', async () => {
+      try {
+        const produtoId = document.getElementById('produto_id').value;
+        await apiFetchAdmin(`/produtos/admin/${produtoId}/imagens/${select.dataset.imagemId}/cor`, {
+          method: 'PUT',
+          body: JSON.stringify({ cor_id: select.value || null }),
+        });
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+}
+
+// ---------- Cores ----------
+
+function renderizarCores(cores) {
+  const container = document.getElementById('lista-cores');
+  if (cores.length === 0) {
+    container.innerHTML = `<p class="texto-suave" style="font-size:0.85rem;">Nenhuma cor cadastrada ainda.</p>`;
+    return;
+  }
+  container.innerHTML = cores.map((c) => `
+    <span class="tag-admin">
+      ${c.codigo_hex ? `<span class="tag-admin__bolinha" style="background:${escapeHtml(c.codigo_hex)}"></span>` : ''}
+      ${escapeHtml(c.nome)}
+      <button type="button" data-remover-cor="${c.id}" aria-label="Remover cor ${escapeHtml(c.nome)}">✕</button>
+    </span>
+  `).join('');
+
+  container.querySelectorAll('[data-remover-cor]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remover esta cor? As fotos vinculadas a ela voltam a ser fotos gerais.')) return;
+      try {
+        const produtoId = document.getElementById('produto_id').value;
+        await apiFetchAdmin(`/produtos/admin/${produtoId}/cores/${btn.dataset.removerCor}`, { method: 'DELETE' });
+        await recarregarProdutoNoModal();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+}
+
+document.getElementById('btn-add-cor').addEventListener('click', async () => {
+  const nome = document.getElementById('nova_cor_nome').value.trim();
+  const hex = document.getElementById('nova_cor_hex').value;
+  if (!nome) return;
+
+  try {
+    const produtoId = document.getElementById('produto_id').value;
+    await apiFetchAdmin(`/produtos/admin/${produtoId}/cores`, {
+      method: 'POST',
+      body: JSON.stringify({ nome, codigo_hex: hex }),
+    });
+    document.getElementById('nova_cor_nome').value = '';
+    await recarregarProdutoNoModal();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+// ---------- Tamanhos ----------
+
+function renderizarTamanhos(tamanhos) {
+  const container = document.getElementById('lista-tamanhos');
+  if (tamanhos.length === 0) {
+    container.innerHTML = `<p class="texto-suave" style="font-size:0.85rem;">Nenhum tamanho cadastrado ainda.</p>`;
+    return;
+  }
+  container.innerHTML = tamanhos.map((t) => `
+    <span class="tag-admin">
+      ${escapeHtml(t.tamanho)}
+      <button type="button" data-remover-tamanho="${t.id}" aria-label="Remover tamanho ${escapeHtml(t.tamanho)}">✕</button>
+    </span>
+  `).join('');
+
+  container.querySelectorAll('[data-remover-tamanho]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        const produtoId = document.getElementById('produto_id').value;
+        await apiFetchAdmin(`/produtos/admin/${produtoId}/tamanhos/${btn.dataset.removerTamanho}`, { method: 'DELETE' });
+        const produto = await apiFetchAdmin(`/produtos/admin/${produtoId}`);
+        renderizarTamanhos(produto.tamanhos || []);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+}
+
+document.getElementById('btn-add-tamanho').addEventListener('click', async () => {
+  const tamanho = document.getElementById('novo_tamanho').value.trim();
+  if (!tamanho) return;
+
+  try {
+    const produtoId = document.getElementById('produto_id').value;
+    await apiFetchAdmin(`/produtos/admin/${produtoId}/tamanhos`, {
+      method: 'POST',
+      body: JSON.stringify({ tamanho }),
+    });
+    document.getElementById('novo_tamanho').value = '';
+    const produto = await apiFetchAdmin(`/produtos/admin/${produtoId}`);
+    renderizarTamanhos(produto.tamanhos || []);
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+function fecharModal() {
+  document.getElementById('modal-produto').style.display = 'none';
+}
+
+document.getElementById('btn-novo-produto').addEventListener('click', abrirModalNovo);
+document.getElementById('btn-cancelar-modal').addEventListener('click', fecharModal);
+
+document.getElementById('form-produto').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertaModal = document.getElementById('alerta-modal');
+  alertaModal.innerHTML = '';
+
+  const id = document.getElementById('produto_id').value;
+  const formData = new FormData();
+  formData.append('nome', document.getElementById('p_nome').value);
+  formData.append('categoria_id', document.getElementById('p_categoria').value);
+  formData.append('descricao', document.getElementById('p_descricao').value);
+  formData.append('preco_custo', document.getElementById('p_custo').value);
+  formData.append('preco_varejo', document.getElementById('p_varejo').value);
+  formData.append('preco_atacado', document.getElementById('p_atacado').value);
+  formData.append('desconto_atacado_percentual', document.getElementById('p_desconto').value);
+  formData.append('quantidade_minima_atacado', document.getElementById('p_qtd_minima').value);
+  formData.append('estoque', document.getElementById('p_estoque').value);
+  formData.append('peso_kg', document.getElementById('p_peso').value);
+  formData.append('altura_cm', document.getElementById('p_altura').value);
+  formData.append('largura_cm', document.getElementById('p_largura').value);
+  formData.append('comprimento_cm', document.getElementById('p_comprimento').value);
+
+  const arquivosImagem = document.getElementById('p_imagem').files;
+  for (const arquivo of arquivosImagem) {
+    formData.append('imagens', arquivo);
+  }
+
+  try {
+    if (id) {
+      await apiFetchAdmin(`/produtos/admin/${id}`, { method: 'PUT', body: formData });
+    } else {
+      await apiFetchAdmin('/produtos/admin', { method: 'POST', body: formData });
+    }
+    fecharModal();
+    carregarProdutos();
+  } catch (err) {
+    alertaModal.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+async function removerProduto(id) {
+  if (!confirm('Tem certeza que deseja remover este produto? Ele deixará de aparecer na loja.')) return;
+  try {
+    await apiFetchAdmin(`/produtos/admin/${id}`, { method: 'DELETE' });
+    carregarProdutos();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById('p_imagem').addEventListener('change', (e) => {
+  const status = document.getElementById('upload-fotos-status');
+  const n = e.target.files.length;
+  status.textContent = n === 0
+    ? 'Nenhuma foto selecionada'
+    : n === 1
+    ? '1 foto selecionada'
+    : `${n} fotos selecionadas`;
+  status.classList.toggle('upload-fotos__status--ativo', n > 0);
+});
+
+(async function iniciar() {
+  await carregarCategoriasSelect();
+  await carregarProdutos();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ Admin — Pedidos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__logo">
+      <img src="../assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ Admin</span>
+    </div>
+    <ul class="admin-sidebar__nav" id="admin-nav"></ul>
+    <div class="admin-sidebar__rodape">
+      <p class="texto-suave" style="font-size:0.85rem; margin-bottom:8px;">Olá, <strong id="admin-nome"></strong></p>
+      <button class="btn btn-secundario btn-bloco" id="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topo">
+      <div>
+        <h1 style="margin-bottom:2px;">Pedidos</h1>
+        <p class="texto-suave">Acompanhe e atualize o status de cada pedido</p>
+      </div>
+      <select id="filtro-status" class="campo" style="width:220px; padding:12px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
+        <option value="">Todos os status</option>
+        <option value="pendente">Pendente</option>
+        <option value="pago">Pago</option>
+        <option value="enviado">Enviado</option>
+        <option value="entregue">Entregue</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+    </div>
+
+    <div id="alerta-pedidos"></div>
+
+    <div class="admin-painel">
+      <div style="overflow-x:auto;">
+        <table class="tabela-admin">
+          <thead>
+            <tr>
+              <th>Nº do pedido</th><th>Cliente</th><th>Cidade/UF</th>
+              <th>Total</th><th>Status</th><th>Data</th><th>Atualizar status</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-pedidos">
+            <tr><td colspan="7">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/cart.js"></script>
+<script src="js/admin.js"></script>
+<script>
+exigirLoginAdmin();
+montarSidebarAdmin('pedidos');
+
+const STATUS_OPCOES = ['pendente', 'pago', 'enviado', 'entregue', 'cancelado'];
+
+function formatarData(dataStr) {
+  return new Date(dataStr).toLocaleString('pt-BR');
+}
+
+async function carregarPedidos() {
+  const tbody = document.getElementById('tabela-pedidos');
+  const status = document.getElementById('filtro-status').value;
+
+  try {
+    const query = status ? `?status=${status}` : '';
+    const pedidos = await apiFetchAdmin(`/pedidos/admin/all${query}`);
+
+    if (pedidos.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7">Nenhum pedido encontrado.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = pedidos.map((p) => `
+      <tr>
+        <td>${escapeHtml(p.numero_pedido)}</td>
+        <td>${escapeHtml(p.cliente_nome)}<br><span class="texto-suave" style="font-size:0.82rem;">${escapeHtml(p.cliente_telefone)}</span></td>
+        <td>${escapeHtml(p.endereco_cidade || '—')}/${escapeHtml(p.endereco_estado || '')}</td>
+        <td>${formatarPreco(p.total)}</td>
+        <td><span class="${classeBadgeStatus(p.status)}">${escapeHtml(p.status)}</span></td>
+        <td>${formatarData(p.criado_em)}</td>
+        <td>
+          <select data-id="${p.id}" class="select-status" style="padding:8px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
+            ${STATUS_OPCOES.map((s) => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('.select-status').forEach((select) => {
+      select.addEventListener('change', () => atualizarStatus(select.dataset.id, select.value));
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function atualizarStatus(id, novoStatus) {
+  const alertaEl = document.getElementById('alerta-pedidos');
+  try {
+    await apiFetchAdmin(`/pedidos/admin/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: novoStatus }),
+    });
+    alertaEl.innerHTML = `<div class="alerta alerta-sucesso">Status atualizado com sucesso.</div>`;
+    setTimeout(() => (alertaEl.innerHTML = ''), 2500);
+    carregarPedidos();
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById('filtro-status').addEventListener('change', carregarPedidos);
+
+carregarPedidos();
+</script>
+</body>
+</html>

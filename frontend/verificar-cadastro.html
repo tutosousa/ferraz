@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ — Confirmar cadastro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="index.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="carrinho.html" class="carrinho-link">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="pagina-auth">
+  <div class="resumo-pedido">
+    <h1>Confirme seu e-mail</h1>
+    <p class="texto-suave">Sua conta ainda não foi confirmada. Digite o código de 6 dígitos que enviamos por e-mail.</p>
+
+    <div id="alerta-codigo"></div>
+
+    <form id="form-codigo">
+      <div class="campo">
+        <label for="codigo">Código de confirmação</label>
+        <input type="text" id="codigo" required maxlength="6" inputmode="numeric" placeholder="000000" style="text-align:center; font-size:1.4rem; letter-spacing:0.3em;">
+      </div>
+      <button type="submit" class="btn btn-primario btn-bloco btn-grande" id="btn-confirmar">Confirmar</button>
+    </form>
+
+    <p class="texto-suave" style="text-align:center; margin-top:20px;">
+      Não recebeu? <button type="button" id="btn-reenviar" style="background:none; border:none; color:var(--cor-primaria-escura); font-weight:600; cursor:pointer;">Reenviar código</button>
+    </p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container"><p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/customer.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+
+const clienteId = new URLSearchParams(window.location.search).get('cliente_id');
+if (!clienteId) window.location.href = 'login.html';
+
+document.getElementById('form-codigo').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btn-confirmar');
+  const alertaEl = document.getElementById('alerta-codigo');
+  btn.disabled = true;
+  btn.textContent = 'Confirmando...';
+
+  try {
+    await apiFetch('/clientes/cadastro/verificar', {
+      method: 'POST',
+      body: JSON.stringify({ cliente_id: clienteId, codigo: document.getElementById('codigo').value }),
+    });
+    window.location.href = 'login.html?confirmado=1';
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Confirmar';
+  }
+});
+
+document.getElementById('btn-reenviar').addEventListener('click', async () => {
+  const alertaEl = document.getElementById('alerta-codigo');
+  try {
+    const resultado = await apiFetch('/clientes/cadastro/reenviar-codigo', {
+      method: 'POST',
+      body: JSON.stringify({ cliente_id: clienteId }),
+    });
+    let msg = `<div class="alerta alerta-sucesso">Novo código enviado!</div>`;
+    if (resultado.codigo_simulado) {
+      msg = `<div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">Modo de teste: novo código é <strong>${resultado.codigo_simulado}</strong></div>`;
+    }
+    alertaEl.innerHTML = msg;
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+});
+</script>
+</body>
+</html>

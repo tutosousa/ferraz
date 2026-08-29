@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ — Pedido realizado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__top">
+    <a href="index.html" class="site-header__logo">
+      <img src="assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ</span>
+    </a>
+    <div class="site-header__acoes">
+      <a href="carrinho.html" class="carrinho-link">
+        Carrinho
+        <span class="carrinho-link__contador" id="carrinho-contador">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="container secao">
+  <div id="conteudo-sucesso" class="estado-vazio">
+    <p class="carregando">Confirmando seu pedido...</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container site-footer__grade">
+    <div class="site-footer__coluna">
+      <div class="site-footer__marca">
+        <img src="assets/logo.png" alt="Logo FERRAZ">
+        <span>FERRAZ</span>
+      </div>
+      <p class="texto-suave">Moda atemporal, feita para durar. Peças de alfaiataria e conjuntos para o seu dia a dia, no varejo ou no atacado.</p>
+      <div class="site-footer__social">
+        <a href="https://wa.me/558196336445" target="_blank" rel="noopener" aria-label="WhatsApp">WhatsApp</a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>
+      </div>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Institucional</h4>
+      <ul>
+        <li><a href="index.html">Loja (varejo)</a></li>
+        <li><a href="atacado.html">Loja (atacado)</a></li>
+        <li><a href="conta.html">Minha conta</a></li>
+        <li><a href="carrinho.html">Meu carrinho</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Categorias</h4>
+      <ul id="footer-categorias">
+        <li><a href="index.html">Ver todas as peças</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__coluna">
+      <h4>Fale com a gente</h4>
+      <ul class="site-footer__contato">
+        <li><a href="https://wa.me/558196336445" target="_blank" rel="noopener">WhatsApp: (81) 9633-6445</a></li>
+        <li><a href="mailto:Ferrazcollection@icloud.com">E-mail: Ferrazcollection@icloud.com</a></li>
+        <li>Seg. a Sex., 9h às 18h</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="site-footer__barra">
+    <div class="container site-footer__barra-conteudo">
+      <p>© <span id="ano"></span> FERRAZ. Todos os direitos reservados.</p>
+      <p class="texto-suave" style="font-size:0.82rem;">Pagamento processado com segurança via Mercado Pago — Pix, cartão e boleto.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script>
+document.getElementById('ano').textContent = new Date().getFullYear();
+
+const numero = new URLSearchParams(window.location.search).get('numero');
+
+async function carregarPedido() {
+  const container = document.getElementById('conteudo-sucesso');
+  if (!numero) {
+    container.innerHTML = `<h3>Número de pedido não informado.</h3><a href="index.html" class="btn btn-primario">Voltar à loja</a>`;
+    return;
+  }
+
+  try {
+    const pedido = await apiFetch(`/pedidos/numero/${encodeURIComponent(numero)}`);
+
+    const statusMensagem = pedido.status === 'pago'
+      ? '<div class="alerta alerta-sucesso">Pagamento confirmado!</div>'
+      : pedido.status === 'cancelado'
+      ? '<div class="alerta alerta-erro">Este pagamento não foi aprovado. Você pode tentar novamente ou falar com a gente pelo WhatsApp.</div>'
+      : '<div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">Estamos aguardando a confirmação do seu pagamento. Isso pode levar alguns instantes — atualize esta página em breve.</div>';
+
+    container.innerHTML = `
+      <div style="max-width:520px; margin:0 auto; text-align:left;">
+        <div class="text-center" style="margin-bottom:24px;">
+          <h1>Pedido realizado com sucesso!</h1>
+          <p class="texto-suave">Obrigado por comprar com a FERRAZ, ${escapeHtml(pedido.cliente_nome)}.</p>
+        </div>
+        ${statusMensagem}
+        <div class="resumo-pedido">
+          <div class="resumo-pedido__linha"><span>Número do pedido</span><strong>${escapeHtml(pedido.numero_pedido)}</strong></div>
+          <div class="resumo-pedido__linha"><span>Status</span><span>${escapeHtml(pedido.status)}</span></div>
+          <div class="resumo-pedido__linha"><span>Subtotal</span><span>${formatarPreco(pedido.subtotal)}</span></div>
+          <div class="resumo-pedido__linha"><span>Frete</span><span>${formatarPreco(pedido.frete)}</span></div>
+          <div class="resumo-pedido__linha resumo-pedido__linha--total"><span>Total</span><span>${formatarPreco(pedido.total)}</span></div>
+        </div>
+        <p class="texto-suave" style="margin-top:20px; font-size:0.9rem;">
+          Enviaremos atualizações sobre o envio pelo telefone/e-mail informado no checkout.
+        </p>
+        <div class="text-center" style="margin-top:24px;">
+          <a href="index.html" class="btn btn-primario">Continuar comprando</a>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="alerta alerta-erro">Não foi possível localizar este pedido.</div>`;
+  }
+}
+
+carregarPedido();
+</script>
+</body>
+</html>
