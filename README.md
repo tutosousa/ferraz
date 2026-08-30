@@ -284,15 +284,9 @@ O fluxo é: a pessoa digita o e-mail → recebe um código de 6 dígitos (por e-
 
 ## 8. Frete
 
-Implementado como **frete fixo por região** para pedidos de **varejo** (mais simples e previsível do que integrar uma API externa de frete). A tabela de valores está em `backend/services/shipping.js`, na constante `FRETE_POR_REGIAO` — ajuste os valores conforme sua operação real.
+**Frete grátis para todos os pedidos**, tanto varejo quanto atacado — não existe nenhum cálculo, cobrança ou seleção de frete no site. O campo `frete` no banco de dados sempre fica em R$ 0,00.
 
-Pedidos de **atacado** não têm frete fixo (fica combinado diretamente com o cliente, já que o volume varia muito) — o campo aparece como R$ 0,00 no pedido, e o combinado do frete acontece fora do site.
-
-> **Nota:** uma integração com o Melhor Envio (cotação real com múltiplas transportadoras) chegou a ser implementada, mas ficou travada num erro específico do lado da conta/aplicativo deles (`invalid_client` persistente, mesmo com tudo configurado corretamente e confirmado pelo suporte) — foi removida por enquanto. Pode ser reimplementada no futuro se o suporte deles resolver a causa.
-
-### Peso e dimensões dos produtos
-
-Os campos de peso e dimensões continuam disponíveis na tela de edição de produto no admin (seção "Peso e dimensões") — não são usados pelo frete fixo atual, mas ficam prontos caso uma integração de frete real seja adicionada de volta no futuro.
+> **Nota:** já existiram duas tentativas anteriores de cálculo de frete (frete fixo por região, e depois uma integração real com o Melhor Envio) — ambas foram removidas a pedido, optando por frete grátis simples em vez disso. Os campos de peso e dimensões continuam disponíveis na tela de edição de produto no admin, prontos caso um cálculo de frete seja adicionado de volta no futuro.
 
 ---
 

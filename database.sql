@@ -174,8 +174,6 @@ CREATE TABLE pedidos (
   forma_pagamento VARCHAR(50) DEFAULT 'simulado',
   mp_preference_id VARCHAR(120) DEFAULT NULL,
   mp_payment_id VARCHAR(120) DEFAULT NULL,
-  frete_descricao VARCHAR(150) DEFAULT NULL, -- ex: "Correios - PAC"
-  frete_prazo_dias INT DEFAULT NULL,
   criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
