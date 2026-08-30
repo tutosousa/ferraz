@@ -16,6 +16,7 @@ const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const financeRoutes = require('./routes/financeRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const melhorEnvioRoutes = require('./routes/melhorEnvioRoutes');
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/produtos', productRoutes);
 app.use('/api/pedidos', orderRoutes);
 app.use('/api/financeiro', financeRoutes);
 app.use('/api/pagamentos', paymentRoutes);
+app.use('/api/frete', melhorEnvioRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'FERRAZ E-commerce API' });

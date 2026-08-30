@@ -114,6 +114,20 @@ CREATE TABLE codigos_recuperacao_senha (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- Tabela: melhor_envio_conexao (guarda o token de acesso OAuth2 do
+-- Melhor Envio depois que o admin autoriza a integração — só existe uma
+-- linha, que vai sendo atualizada conforme o token é renovado)
+-- ---------------------------------------------------------------------
+CREATE TABLE melhor_envio_conexao (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  expira_em DATETIME NOT NULL,
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- Tabela: produto_cores (variações de cor de um produto, ex: Verde, Azul)
 -- ---------------------------------------------------------------------
 CREATE TABLE produto_cores (

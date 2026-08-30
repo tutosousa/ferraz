@@ -2,15 +2,11 @@
 // etc) para trazer várias opções reais de envio, com preço e prazo de cada
 // transportadora — exatamente como aparece nos grandes e-commerces.
 
-const {
-  MELHOR_ENVIO_ATIVO,
-  MELHOR_ENVIO_BASE_URL,
-  MELHOR_ENVIO_TOKEN,
-  MELHOR_ENVIO_CEP_ORIGEM,
-} = require('../config/melhorEnvio');
+const { CEP_ORIGEM, API_BASE_URL, MELHOR_ENVIO_CONFIGURADO } = require('../config/melhorEnvio');
+const { obterTokenValido } = require('./melhorEnvioAuth');
 
 // ---------- Modo simulado (frete fixo por região) ----------
-// Usado como reserva enquanto o Melhor Envio não está configurado, ou se a
+// Usado como reserva enquanto o Melhor Envio não está conectado, ou se a
 // consulta a ele falhar por algum motivo (ex: fora do ar).
 const FRETE_POR_REGIAO = {
   PE: 15.0,
@@ -36,7 +32,7 @@ function cotacaoSimulada(estadoDestino) {
     {
       id: 'simulado-padrao',
       transportadora: 'Envio padrão',
-      servico: 'Estimativa (frete real ainda não configurado pela loja)',
+      servico: 'Estimativa (frete real ainda não conectado pela loja)',
       preco: valor,
       prazo_dias: 7,
     },
@@ -68,19 +64,19 @@ function calcularPacote(itens) {
   };
 }
 
-async function cotarFreteReal(cepDestino, itens) {
+async function cotarFreteReal(cepDestino, itens, accessToken) {
   const pacote = calcularPacote(itens);
 
-  const resposta = await fetch(`${MELHOR_ENVIO_BASE_URL}/api/v2/me/shipment/calculate`, {
+  const resposta = await fetch(`${API_BASE_URL}/me/shipment/calculate`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${MELHOR_ENVIO_TOKEN}`,
+      Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      'User-Agent': 'FERRAZ E-commerce (contato@ferraz.com.br)',
+      'User-Agent': 'FERRAZ E-commerce (ferrazcollection@icloud.com)',
     },
     body: JSON.stringify({
-      from: { postal_code: MELHOR_ENVIO_CEP_ORIGEM },
+      from: { postal_code: CEP_ORIGEM },
       to: { postal_code: String(cepDestino).replace(/\D/g, '') },
       package: pacote,
     }),
@@ -106,17 +102,24 @@ async function cotarFreteReal(cepDestino, itens) {
     .sort((a, b) => a.preco - b.preco);
 }
 
-// Função principal: tenta o Melhor Envio; se não estiver configurado ou a
-// consulta falhar, cai automaticamente pro modo simulado.
+// Função principal: tenta o Melhor Envio (se já foi conectado pelo admin);
+// se não estiver conectado ou a consulta falhar, cai automaticamente pro
+// modo simulado.
 async function obterOpcoesFrete(cepDestino, estadoDestino, itens) {
-  if (!MELHOR_ENVIO_ATIVO) {
+  if (!MELHOR_ENVIO_CONFIGURADO) {
     return { ativo: false, opcoes: cotacaoSimulada(estadoDestino) };
   }
 
   try {
-    const opcoes = await cotarFreteReal(cepDestino, itens);
+    const accessToken = await obterTokenValido();
+    if (!accessToken) {
+      // Credenciais configuradas, mas o admin ainda não clicou em
+      // "Conectar" no painel pra autorizar de fato.
+      return { ativo: false, opcoes: cotacaoSimulada(estadoDestino) };
+    }
+
+    const opcoes = await cotarFreteReal(cepDestino, itens, accessToken);
     if (opcoes.length === 0) {
-      // Melhor Envio respondeu mas nenhuma transportadora atende esse CEP
       return { ativo: true, opcoes: cotacaoSimulada(estadoDestino), aviso: 'Nenhuma transportadora disponível para este CEP no momento — usando estimativa.' };
     }
     return { ativo: true, opcoes };
@@ -126,4 +129,4 @@ async function obterOpcoesFrete(cepDestino, estadoDestino, itens) {
   }
 }
 
-module.exports = { obterOpcoesFrete, calcularPacote, MELHOR_ENVIO_ATIVO };
+module.exports = { obterOpcoesFrete, calcularPacote, MELHOR_ENVIO_CONFIGURADO };

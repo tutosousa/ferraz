@@ -273,22 +273,30 @@ O fluxo é: a pessoa digita o e-mail → recebe um código de 6 dígitos (por e-
 
 O checkout de **varejo** mostra opções de frete de verdade (transportadora, prazo e preço), consultadas em tempo real no **Melhor Envio** — o mesmo agregador de fretes (Correios, Jadlog, e outras) usado por grandes e-commerces.
 
-Enquanto o Melhor Envio não estiver configurado, o site roda em **modo simulado**: usa uma tabela de frete fixo por região como reserva (não trava o checkout, só não mostra várias opções de transportadora).
+Enquanto o Melhor Envio não estiver conectado, o site roda em **modo simulado**: usa uma tabela de frete fixo por região como reserva (não trava o checkout, só não mostra várias opções de transportadora).
+
+**Atenção:** o Melhor Envio exige um login OAuth2 (parecido com "Entrar com Google") — não é mais um token fixo simples. São dois passos: primeiro configurar as credenciais no `.env`, depois **autorizar de fato** clicando num botão no painel admin.
 
 ### Passo a passo para ativar o frete real
 
 1. Crie uma conta em **https://www.melhorenvio.com.br**
-2. Faça login e vá em **Configurações da conta** → **"Gerar token"** (ou "Tokens de integração") — isso cria um token de acesso pessoal, sem precisar passar pelo fluxo completo de aplicação
-3. Copie o token gerado
-4. No `.env` do backend, preencha:
+2. Vá em **"Integrações"** → **"Área Dev."** → **"Cadastrar aplicativo"**
+3. Preencha o formulário:
+   - **Site da plataforma / URL do ambiente de testes:** o endereço do seu backend publicado (ex: `https://ferraz-backend.onrender.com`)
+   - **URL de redirecionamento após autorização (callback):** o mesmo endereço + `/api/frete/melhor-envio/callback` (ex: `https://ferraz-backend.onrender.com/api/frete/melhor-envio/callback`)
+   - Desative a opção **"Permitir que o usuário altere as configurações de transportadora"** (é só pra uso interno de vocês, não pra outras lojas)
+4. Depois de cadastrar, copie o **Client ID** e o **Secret** mostrados
+5. No `.env` do backend, preencha:
    ```
-   MELHOR_ENVIO_TOKEN=o_token_copiado_aqui
+   MELHOR_ENVIO_CLIENT_ID=o_client_id_copiado
+   MELHOR_ENVIO_CLIENT_SECRET=o_secret_copiado
    MELHOR_ENVIO_CEP_ORIGEM=00000000
    ```
-   (`MELHOR_ENVIO_CEP_ORIGEM` é o CEP de onde a loja despacha os pedidos — só números, sem hífen)
-5. Reinicie o backend
+   (`MELHOR_ENVIO_CEP_ORIGEM` é o CEP de onde a loja despacha os pedidos — só números, sem hífen. E confirme que `BACKEND_URL` também está preenchido no `.env`, com o mesmo endereço usado no callback)
+6. Reinicie o backend
+7. Entre no **painel admin** → aba **"Frete"** → clique em **"Conectar com Melhor Envio"** — isso abre a tela de login/autorização deles; depois de autorizar, você volta pro painel já conectado
 
-**Testando antes de ir para produção:** o Melhor Envio tem um ambiente de testes (sandbox) — cadastre-se separadamente em **https://sandbox.melhorenvio.com.br** e gere um token de lá (costuma começar com `sandbox_`). O sistema detecta automaticamente esse prefixo e usa o ambiente de testes, sem gerar nenhum frete real.
+A partir daí, o checkout passa a mostrar cotações reais automaticamente. O token de acesso expira a cada 30 dias, mas o sistema **renova sozinho** (usando o token de renovação, válido por 45 dias) — não precisa refazer esse processo periodicamente, só na primeira vez.
 
 ### Peso e dimensões dos produtos
 
@@ -412,8 +420,9 @@ Isso cria o banco `ferraz_ecommerce` com todas as tabelas e dados de exemplo den
    SMTP_USER     = (seu e-mail, se for usar Gmail)
    SMTP_PASS     = (a senha de app do Gmail, se for usar)
    SMTP_FROM     = "FERRAZ <seuemail@gmail.com>"
-   MELHOR_ENVIO_TOKEN      = (deixe em branco se ainda não tiver — veja a seção 8)
-   MELHOR_ENVIO_CEP_ORIGEM = (o CEP de onde a loja despacha os pedidos)
+   MELHOR_ENVIO_CLIENT_ID     = (deixe em branco se ainda não tiver — veja a seção 8)
+   MELHOR_ENVIO_CLIENT_SECRET = (idem)
+   MELHOR_ENVIO_CEP_ORIGEM    = (o CEP de onde a loja despacha os pedidos)
    ```
    (deixe `FRONTEND_URL=*` por enquanto — vamos ajustar depois de publicar o frontend)
 6. Clique **"Create Web Service"**

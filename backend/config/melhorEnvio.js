@@ -1,34 +1,79 @@
 // Configuração da integração com o Melhor Envio — cálculo de frete real
 // (Correios, Jadlog e outras transportadoras, tudo em uma única consulta).
 //
-// Para ativar o frete real, o DONO DA LOJA precisa:
-//   1. Criar uma conta em https://www.melhorenvio.com.br
-//   2. Ir em "Gerenciar" → "Aplicações" → criar uma aplicação (ou usar o
-//      token pessoal em "Gerar token" nas configurações da conta)
-//   3. Copiar o token gerado
-//   4. Preencher no .env do backend:
-//        MELHOR_ENVIO_TOKEN=o_token_copiado_aqui
-//        MELHOR_ENVIO_CEP_ORIGEM=00000000 (o CEP de onde a loja despacha,
-//                                           só números, sem hífen)
+// O Melhor Envio exige login OAuth2 (parecido com "Entrar com Google"),
+// não é mais um token fixo simples. O fluxo é:
+//   1. O admin clica em "Conectar com Melhor Envio" no painel.
+//   2. É redirecionado pro Melhor Envio, loga e autoriza o app da loja.
+//   3. O Melhor Envio manda o navegador de volta pro nosso backend com um
+//      "código" — trocamos esse código por um token de acesso (válido por
+//      30 dias) e um token de renovação (válido por 45 dias).
+//   4. Guardamos os dois no banco de dados, e o sistema renova sozinho
+//      quando o token estiver perto de vencer.
 //
-// Enquanto o token não estiver configurado, o site roda em MODO SIMULADO:
-// usa a tabela de frete fixo por região (mais simples, sem cotação real) —
-// ótimo pra testar e demonstrar antes de ativar o frete de verdade.
+// Pra isso funcionar, o DONO DA LOJA precisa:
+//   1. Criar uma conta em https://www.melhorenvio.com.br
+//   2. Ir em "Integrações" → "Área Dev." → "Cadastrar aplicativo"
+//   3. Preencher o formulário (a URL de callback deve ser
+//      SEU_BACKEND/api/frete/melhor-envio/callback)
+//   4. Copiar o Client ID e o Secret gerados
+//   5. Preencher no .env do backend:
+//        MELHOR_ENVIO_CLIENT_ID=o_client_id
+//        MELHOR_ENVIO_CLIENT_SECRET=o_secret
+//        MELHOR_ENVIO_CEP_ORIGEM=00000000 (CEP de onde a loja despacha)
+//   6. Reiniciar o backend, entrar no painel admin, aba "Frete", e clicar
+//      em "Conectar com Melhor Envio" pra autorizar de fato.
+//
+// Enquanto isso não for feito, o site roda em MODO SIMULADO: usa uma
+// tabela de frete fixo por região — ótimo pra testar sem configurar nada.
 
-const MELHOR_ENVIO_ATIVO = Boolean(
-  process.env.MELHOR_ENVIO_TOKEN && process.env.MELHOR_ENVIO_CEP_ORIGEM
+const CLIENT_ID = process.env.MELHOR_ENVIO_CLIENT_ID;
+const CLIENT_SECRET = process.env.MELHOR_ENVIO_CLIENT_SECRET;
+const CEP_ORIGEM = process.env.MELHOR_ENVIO_CEP_ORIGEM;
+
+// A aplicação foi cadastrada em ambiente de PRODUÇÃO do Melhor Envio (não
+// no Sandbox), então usamos sempre o domínio de produção.
+const BASE_URL = 'https://www.melhorenvio.com.br';
+const AUTHORIZE_URL = `${BASE_URL}/oauth/authorize`;
+const TOKEN_URL = `${BASE_URL}/oauth/token`;
+const API_BASE_URL = `${BASE_URL}/api/v2`;
+
+// Permissões pedidas ao usuário na hora de autorizar: cotação de frete,
+// consulta de transportadoras, e o necessário pra futuramente comprar e
+// gerar etiquetas direto pelo painel admin.
+const SCOPES = [
+  'shipping-calculate',
+  'shipping-companies',
+  'cart-read',
+  'cart-write',
+  'shipping-checkout',
+  'shipping-generate',
+  'shipping-preview',
+  'shipping-print',
+  'ecommerce-shipping',
+].join(' ');
+
+function obterRedirectUri() {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) return null;
+  return `${backendUrl}/api/frete/melhor-envio/callback`;
+}
+
+// "Configurado" = tem as credenciais necessárias pra SEQUER começar o
+// processo de autorização (isso não significa que já foi autorizado).
+const MELHOR_ENVIO_CONFIGURADO = Boolean(
+  CLIENT_ID && CLIENT_SECRET && CEP_ORIGEM && obterRedirectUri()
 );
 
-// Sandbox é usado automaticamente se o token começar com "sandbox_" — assim
-// dá pra testar a integração de verdade sem mexer em pedidos reais.
-const MELHOR_ENVIO_BASE_URL =
-  process.env.MELHOR_ENVIO_TOKEN && process.env.MELHOR_ENVIO_TOKEN.startsWith('sandbox_')
-    ? 'https://sandbox.melhorenvio.com.br'
-    : 'https://www.melhorenvio.com.br';
-
 module.exports = {
-  MELHOR_ENVIO_ATIVO,
-  MELHOR_ENVIO_BASE_URL,
-  MELHOR_ENVIO_TOKEN: process.env.MELHOR_ENVIO_TOKEN,
-  MELHOR_ENVIO_CEP_ORIGEM: process.env.MELHOR_ENVIO_CEP_ORIGEM,
+  CLIENT_ID,
+  CLIENT_SECRET,
+  CEP_ORIGEM,
+  BASE_URL,
+  AUTHORIZE_URL,
+  TOKEN_URL,
+  API_BASE_URL,
+  SCOPES,
+  obterRedirectUri,
+  MELHOR_ENVIO_CONFIGURADO,
 };

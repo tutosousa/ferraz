@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FERRAZ Admin — Frete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__logo">
+      <img src="../assets/logo.png" alt="Logo FERRAZ">
+      <span>FERRAZ Admin</span>
+    </div>
+    <ul class="admin-sidebar__nav" id="admin-nav"></ul>
+    <div class="admin-sidebar__rodape">
+      <p class="texto-suave" style="font-size:0.85rem; margin-bottom:8px;">Olá, <strong id="admin-nome"></strong></p>
+      <button class="btn btn-secundario btn-bloco" id="btn-sair">Sair</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topo">
+      <div>
+        <h1 style="margin-bottom:2px;">Frete</h1>
+        <p class="texto-suave">Conecte o Melhor Envio pra cotação de frete real no checkout</p>
+      </div>
+    </div>
+
+    <div id="alerta-frete"></div>
+
+    <div class="admin-painel" style="padding:28px; max-width:640px;">
+      <div id="status-desconhecido">
+        <p class="texto-suave">Carregando status da conexão...</p>
+      </div>
+
+      <div id="status-nao-configurado" style="display:none;">
+        <div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">
+          O Melhor Envio ainda não foi configurado no servidor. Peça pra quem cuida do código adicionar
+          <code>MELHOR_ENVIO_CLIENT_ID</code>, <code>MELHOR_ENVIO_CLIENT_SECRET</code>,
+          <code>MELHOR_ENVIO_CEP_ORIGEM</code> e <code>BACKEND_URL</code> nas variáveis de ambiente do backend.
+        </div>
+      </div>
+
+      <div id="status-desconectado" style="display:none;">
+        <p>Sua loja ainda não está conectada ao Melhor Envio. Enquanto isso, o checkout usa um frete fixo estimado por região.</p>
+        <button class="btn btn-primario btn-grande" id="btn-conectar">Conectar com Melhor Envio</button>
+      </div>
+
+      <div id="status-conectado" style="display:none;">
+        <div class="alerta alerta-sucesso">✓ Conectado ao Melhor Envio — o checkout já está mostrando cotações reais.</div>
+        <p class="texto-suave" style="margin-top:16px;">
+          Conectado em: <strong id="info-conectado-em"></strong><br>
+          Token válido até: <strong id="info-expira-em"></strong> (renovado automaticamente)
+        </p>
+        <button class="btn btn-secundario" id="btn-desconectar" style="margin-top:16px;">Desconectar</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/cart.js"></script>
+<script src="js/admin.js"></script>
+<script>
+exigirLoginAdmin();
+montarSidebarAdmin('frete');
+
+const params = new URLSearchParams(window.location.search);
+
+function formatarDataHora(valor) {
+  return new Date(valor).toLocaleString('pt-BR');
+}
+
+async function carregarStatus() {
+  document.getElementById('status-desconhecido').style.display = 'block';
+  document.getElementById('status-nao-configurado').style.display = 'none';
+  document.getElementById('status-desconectado').style.display = 'none';
+  document.getElementById('status-conectado').style.display = 'none';
+
+  try {
+    const dados = await apiFetchAdmin('/frete/melhor-envio/status');
+    document.getElementById('status-desconhecido').style.display = 'none';
+
+    if (!dados.configurado) {
+      document.getElementById('status-nao-configurado').style.display = 'block';
+      return;
+    }
+
+    if (dados.conectado) {
+      document.getElementById('status-conectado').style.display = 'block';
+      document.getElementById('info-conectado-em').textContent = formatarDataHora(dados.conectado_em);
+      document.getElementById('info-expira-em').textContent = formatarDataHora(dados.expira_em);
+    } else {
+      document.getElementById('status-desconectado').style.display = 'block';
+    }
+  } catch (err) {
+    document.getElementById('alerta-frete').innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById('btn-conectar').addEventListener('click', () => {
+  const token = obterTokenAdmin();
+  window.location.href = `${API_BASE_URL}/frete/melhor-envio/conectar?admin_token=${encodeURIComponent(token)}`;
+});
+
+document.getElementById('btn-desconectar').addEventListener('click', async () => {
+  if (!confirm('Desconectar o Melhor Envio? O checkout volta a usar o frete fixo estimado até você conectar de novo.')) return;
+  try {
+    await apiFetchAdmin('/frete/melhor-envio/desconectar', { method: 'POST' });
+    carregarStatus();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+// Mensagens de retorno do fluxo de autorização (via query string)
+if (params.get('conectado') === '1') {
+  document.getElementById('alerta-frete').innerHTML = `<div class="alerta alerta-sucesso">Conectado ao Melhor Envio com sucesso!</div>`;
+}
+if (params.get('erro')) {
+  document.getElementById('alerta-frete').innerHTML = `<div class="alerta alerta-erro">Não foi possível conectar (${escapeHtml(params.get('erro'))}). Tente novamente.</div>`;
+}
+
+carregarStatus();
+</script>
+</body>
+</html>
