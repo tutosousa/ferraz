@@ -5,16 +5,13 @@ const { requireCustomerAuth } = require('../middleware/customerAuth');
 const {
   createOrder,
   getOrderByNumber,
-  getShippingQuote,
   listOrders,
   getOrderById,
   updateOrderStatus,
 } = require('../controllers/orderController');
 
-// Checkout agora EXIGE login do cliente (não é mais permitido comprar como
-// visitante) — requireCustomerAuth barra a requisição com 401 se não vier
-// um token de cliente válido.
-router.post('/frete', getShippingQuote);
+// Checkout exige login do cliente — requireCustomerAuth barra a requisição
+// com 401 se não vier um token de cliente válido.
 router.post('/', requireCustomerAuth, createOrder);
 router.get('/numero/:numero', getOrderByNumber);
 

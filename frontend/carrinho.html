@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="icon" type="image/png" href="assets/favicon.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FERRAZ — Meu carrinho</title>
@@ -166,7 +166,6 @@ function renderizarCarrinho() {
           <span>Subtotal</span>
           <span>${formatarPreco(subtotal)}</span>
         </div>
-        <p class="texto-suave" style="font-size:0.85rem;">${modo === 'atacado' ? 'Pedidos de atacado não pagam frete fixo — combinamos o envio direto com você.' : 'O frete é calculado na etapa de checkout, de acordo com o estado de entrega.'}</p>
         <div class="resumo-pedido__linha resumo-pedido__linha--total">
           <span>Total</span>
           <span>${formatarPreco(subtotal)}</span>

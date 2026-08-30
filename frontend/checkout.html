@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="icon" type="image/png" href="assets/favicon.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FERRAZ — Finalizar compra</title>
@@ -98,15 +98,6 @@
         </select>
       </div>
 
-      <div class="campo" id="area-opcoes-frete" style="display:none;">
-        <label>Forma de envio</label>
-        <div id="lista-opcoes-frete" class="lista-opcoes-frete"></div>
-        <p class="texto-suave" id="aviso-frete" style="font-size:0.82rem; display:none; margin-top:6px;"></p>
-      </div>
-      <p class="texto-suave" id="mensagem-preencha-cep" style="font-size:0.85rem; display:none;">
-        Preencha o CEP e o estado para ver as opções de frete.
-      </p>
-
       <p class="texto-suave" style="font-size:0.9rem;" id="texto-pagamento">
         Na próxima etapa você escolhe como pagar (Pix, cartão ou boleto), tudo sem sair do site.
       </p>
@@ -122,10 +113,6 @@
       <div class="resumo-pedido__linha">
         <span>Subtotal</span>
         <span id="resumo-subtotal">R$ 0,00</span>
-      </div>
-      <div class="resumo-pedido__linha" id="linha-frete">
-        <span>Frete</span>
-        <span id="resumo-frete">Selecione o envio</span>
       </div>
       <div class="resumo-pedido__linha resumo-pedido__linha--total">
         <span>Total</span>
@@ -167,21 +154,12 @@ document.body.dataset.modoCarrinho = modo;
 exigirLoginCliente();
 
 const carrinho = obterCarrinho(modo);
-let freteAtual = 0;
 let numeroPedidoAtual = null;
 let mpInstancia = null;
 let brickController = null;
 
 if (carrinho.length === 0) {
   window.location.href = modo === 'atacado' ? 'atacado.html' : 'index.html';
-}
-
-if (modo === 'atacado') {
-  document.getElementById('linha-frete').style.display = 'none';
-  document.getElementById('texto-pagamento').textContent =
-    'Pedidos de atacado não têm frete fixo — combinamos o envio direto com você após a confirmação.';
-} else {
-  document.getElementById('mensagem-preencha-cep').style.display = 'block';
 }
 
 async function preencherComPerfilLogado() {
@@ -197,9 +175,6 @@ async function preencherComPerfilLogado() {
     document.getElementById('endereco_bairro').value = perfil.endereco_bairro || '';
     document.getElementById('endereco_cidade').value = perfil.endereco_cidade || '';
     document.getElementById('endereco_estado').value = perfil.endereco_estado || '';
-    if (perfil.endereco_estado) {
-      document.getElementById('endereco_estado').dispatchEvent(new Event('change'));
-    }
   } catch (err) {
     // segue com o formulário em branco se não conseguir carregar
   }
@@ -220,96 +195,11 @@ function renderizarResumo() {
   }).join('');
 
   document.getElementById('resumo-subtotal').textContent = formatarPreco(subtotal);
-  document.getElementById('resumo-total').textContent = formatarPreco(subtotal + freteAtual);
+  document.getElementById('resumo-total').textContent = formatarPreco(subtotal);
   return subtotal;
 }
 
 let subtotalAtual = renderizarResumo();
-let opcaoFreteSelecionada = null;
-
-// Busca as opções de frete assim que CEP e estado estiverem preenchidos
-// (dispara ao trocar o estado, e ao sair do campo de CEP).
-async function buscarOpcoesFrete() {
-  if (modo === 'atacado') return;
-
-  const cep = document.getElementById('endereco_cep').value.replace(/\D/g, '');
-  const estado = document.getElementById('endereco_estado').value;
-
-  if (cep.length !== 8 || !estado) {
-    document.getElementById('area-opcoes-frete').style.display = 'none';
-    document.getElementById('mensagem-preencha-cep').style.display = 'block';
-    return;
-  }
-  document.getElementById('mensagem-preencha-cep').style.display = 'none';
-
-  const listaEl = document.getElementById('lista-opcoes-frete');
-  const areaEl = document.getElementById('area-opcoes-frete');
-  areaEl.style.display = 'block';
-  listaEl.innerHTML = `<p class="texto-suave" style="font-size:0.85rem;">Calculando opções de frete...</p>`;
-
-  try {
-    const resultado = await apiFetch('/pedidos/frete', {
-      method: 'POST',
-      body: JSON.stringify({
-        cep,
-        estado,
-        itens: carrinho.map((item) => ({ produto_id: item.produto_id, quantidade: item.quantidade })),
-      }),
-    });
-
-    renderizarOpcoesFrete(resultado.opcoes || []);
-
-    const avisoEl = document.getElementById('aviso-frete');
-    if (resultado.aviso) {
-      avisoEl.textContent = resultado.aviso;
-      avisoEl.style.display = 'block';
-    } else {
-      avisoEl.style.display = 'none';
-    }
-  } catch (err) {
-    listaEl.innerHTML = `<div class="alerta alerta-erro">Não foi possível calcular o frete agora. Confira o CEP e tente novamente.</div>`;
-  }
-}
-
-function renderizarOpcoesFrete(opcoes) {
-  const listaEl = document.getElementById('lista-opcoes-frete');
-
-  if (opcoes.length === 0) {
-    listaEl.innerHTML = `<div class="alerta alerta-erro">Nenhuma opção de frete disponível para este CEP.</div>`;
-    return;
-  }
-
-  listaEl.innerHTML = opcoes.map((op, i) => `
-    <label class="opcao-frete">
-      <input type="radio" name="servico_frete_id" value="${escapeHtml(op.id)}" ${i === 0 ? 'checked' : ''}>
-      <span class="opcao-frete__info">
-        <span class="opcao-frete__nome">${escapeHtml(op.transportadora)} — ${escapeHtml(op.servico)}</span>
-        <span class="opcao-frete__prazo">${op.prazo_dias ? `Chega em até ${op.prazo_dias} dia(s) útil(eis)` : 'Prazo a confirmar'}</span>
-      </span>
-      <span class="opcao-frete__preco">${formatarPreco(op.preco)}</span>
-    </label>
-  `).join('');
-
-  // Seleciona a primeira opção (mais barata, já que o backend ordena assim)
-  opcaoFreteSelecionada = opcoes[0];
-  atualizarTotalComFrete();
-
-  listaEl.querySelectorAll('input[name="servico_frete_id"]').forEach((radio) => {
-    radio.addEventListener('change', () => {
-      opcaoFreteSelecionada = opcoes.find((o) => String(o.id) === radio.value);
-      atualizarTotalComFrete();
-    });
-  });
-}
-
-function atualizarTotalComFrete() {
-  freteAtual = opcaoFreteSelecionada ? opcaoFreteSelecionada.preco : 0;
-  document.getElementById('resumo-frete').textContent = formatarPreco(freteAtual);
-  document.getElementById('resumo-total').textContent = formatarPreco(subtotalAtual + freteAtual);
-}
-
-document.getElementById('endereco_estado').addEventListener('change', buscarOpcoesFrete);
-document.getElementById('endereco_cep').addEventListener('blur', buscarOpcoesFrete);
 
 // ---------- Etapa 1: cria o pedido, depois decide se mostra o Brick ----------
 document.getElementById('form-checkout').addEventListener('submit', async (e) => {
@@ -317,12 +207,6 @@ document.getElementById('form-checkout').addEventListener('submit', async (e) =>
   const btn = document.getElementById('btn-continuar');
   const alertaEl = document.getElementById('alerta-checkout');
   alertaEl.innerHTML = '';
-
-  if (modo !== 'atacado' && !opcaoFreteSelecionada) {
-    alertaEl.innerHTML = `<div class="alerta alerta-erro">Preencha o CEP e escolha uma forma de envio antes de continuar.</div>`;
-    document.getElementById('area-opcoes-frete').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
 
   const formData = new FormData(e.target);
   const dados = Object.fromEntries(formData.entries());

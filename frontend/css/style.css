@@ -108,6 +108,7 @@ textarea:focus-visible {
 .site-header__logo img {
   width: 46px;
   height: 46px;
+  border-radius: 50%;
 }
 .site-header__logo span {
   font-size: 1.35rem;
@@ -507,44 +508,6 @@ textarea:focus-visible {
   background: var(--cor-primaria-clara);
   color: var(--cor-primaria-escura);
 }
-
-/* ------------------------------- Opções de frete (checkout) ------------------------------- */
-.lista-opcoes-frete {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 6px;
-}
-.opcao-frete {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1.5px solid var(--cor-linha);
-  border-radius: var(--raio);
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-.opcao-frete:hover { border-color: var(--cor-primaria); }
-.opcao-frete:has(input:checked) {
-  border-color: var(--cor-primaria);
-  background: var(--cor-primaria-clara);
-}
-.opcao-frete input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--cor-primaria);
-  flex-shrink: 0;
-}
-.opcao-frete__info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-.opcao-frete__nome { font-weight: 600; font-size: 0.94rem; }
-.opcao-frete__prazo { font-size: 0.82rem; color: var(--cor-texto-suave); }
-.opcao-frete__preco { font-weight: 700; font-size: 1rem; white-space: nowrap; }
 
 .quantidade-seletor {
   display: flex;

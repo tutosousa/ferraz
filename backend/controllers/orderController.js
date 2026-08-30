@@ -1,44 +1,13 @@
 const { pool } = require('../config/db');
 const { MP_ATIVO } = require('./paymentController');
-const { obterOpcoesFrete } = require('../services/shipping');
 
-// Pedidos de atacado não pagam frete fixo por peça — são tratados à parte
-// (combinado direto com o cliente).
-const FRETE_ATACADO = 0;
+// Frete grátis para todos os pedidos (varejo e atacado) — não há mais
+// cálculo nenhum, o total é sempre igual ao subtotal dos produtos.
 
 function gerarNumeroPedido() {
   const timestamp = Date.now().toString().slice(-8);
   const aleatorio = Math.floor(100 + Math.random() * 900);
   return `FRZ-${timestamp}${aleatorio}`;
-}
-
-// Endpoint usado pelo checkout para mostrar as opções de frete (com preço e
-// prazo de cada transportadora) antes de o cliente confirmar o pedido.
-async function getShippingQuote(req, res, next) {
-  try {
-    const { cep, estado, itens } = req.body;
-    if (!estado) {
-      return res.status(400).json({ error: 'Informe o estado de destino.' });
-    }
-
-    let itensComDimensoes = [];
-    if (itens && itens.length > 0) {
-      const ids = itens.map((i) => i.produto_id);
-      const [produtos] = await pool.query(
-        `SELECT id, peso_kg, altura_cm, largura_cm, comprimento_cm FROM produtos WHERE id IN (?)`,
-        [ids]
-      );
-      itensComDimensoes = itens.map((item) => {
-        const p = produtos.find((pr) => pr.id === item.produto_id) || {};
-        return { ...p, quantidade: item.quantidade };
-      });
-    }
-
-    const resultado = await obterOpcoesFrete(cep, estado.toUpperCase(), itensComDimensoes);
-    res.json(resultado);
-  } catch (err) {
-    next(err);
-  }
 }
 
 const QUANTIDADE_MINIMA_PEDIDO_ATACADO = 12;
@@ -165,30 +134,9 @@ async function createOrder(req, res, next) {
       throw Object.assign(new Error('O carrinho está vazio.'), { status: 400, expose: true });
     }
 
-    // Frete: no atacado não cobramos (combinado à parte). No varejo,
-    // consultamos as opções de frete de novo AGORA (não confiamos no valor
-    // que o navegador mandou) e usamos o preço da opção que o cliente
-    // escolheu — se por algum motivo ela não existir mais na nova consulta
-    // (cotação expirou, etc), caímos pra opção mais barata disponível.
-    let frete = FRETE_ATACADO;
-    let freteDescricao = null;
-    let fretePrazoDias = null;
-
-    if (tipoPedido !== 'atacado') {
-      const resultadoFrete = await obterOpcoesFrete(
-        endereco_cep,
-        (endereco_estado || '').toUpperCase(),
-        itensProcessados
-      );
-      const opcoes = resultadoFrete.opcoes;
-      const escolhida =
-        opcoes.find((o) => o.id === req.body.servico_frete_id) || opcoes[0];
-
-      frete = escolhida.preco;
-      freteDescricao = `${escolhida.transportadora} - ${escolhida.servico}`;
-      fretePrazoDias = escolhida.prazo_dias || null;
-    }
-
+    // Frete grátis pra todo mundo — não tem cálculo, não tem consulta,
+    // sempre R$ 0.
+    const frete = 0;
     const total = subtotal + frete;
     const numeroPedido = gerarNumeroPedido();
 
@@ -200,8 +148,8 @@ async function createOrder(req, res, next) {
       `INSERT INTO pedidos
         (cliente_id, numero_pedido, cliente_nome, cliente_telefone, cliente_email,
          endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep,
-         subtotal, frete, total, tipo_pedido, status, forma_pagamento, frete_descricao, frete_prazo_dias)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?, ?, ?)`,
+         subtotal, frete, total, tipo_pedido, status, forma_pagamento)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?)`,
       [
         clienteId,
         numeroPedido,
@@ -219,8 +167,6 @@ async function createOrder(req, res, next) {
         total,
         tipoPedido,
         forma_pagamento || 'mercado_pago',
-        freteDescricao,
-        fretePrazoDias,
       ]
     );
 
@@ -352,7 +298,6 @@ async function updateOrderStatus(req, res, next) {
 module.exports = {
   createOrder,
   getOrderByNumber,
-  getShippingQuote,
   listOrders,
   getOrderById,
   updateOrderStatus,

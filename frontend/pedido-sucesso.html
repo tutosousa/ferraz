@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="icon" type="image/png" href="assets/favicon.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FERRAZ — Pedido realizado</title>
@@ -115,7 +115,6 @@ async function carregarPedido() {
           <div class="resumo-pedido__linha"><span>Número do pedido</span><strong>${escapeHtml(pedido.numero_pedido)}</strong></div>
           <div class="resumo-pedido__linha"><span>Status</span><span>${escapeHtml(pedido.status)}</span></div>
           <div class="resumo-pedido__linha"><span>Subtotal</span><span>${formatarPreco(pedido.subtotal)}</span></div>
-          <div class="resumo-pedido__linha"><span>Frete</span><span>${formatarPreco(pedido.frete)}</span></div>
           <div class="resumo-pedido__linha resumo-pedido__linha--total"><span>Total</span><span>${formatarPreco(pedido.total)}</span></div>
         </div>
         <p class="texto-suave" style="margin-top:20px; font-size:0.9rem;">
