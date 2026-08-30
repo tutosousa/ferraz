@@ -239,7 +239,23 @@ A partir daí, o formulário de pagamento (cartão, Pix com QR code, ou boleto) 
 
 Sem configuração nenhuma, o site roda em **modo simulado**: o código de verificação aparece na própria tela (com um aviso amarelo "modo de teste") em vez de ser enviado por e-mail — ótimo pra testar localmente sem precisar configurar nada.
 
-Pra ativar o envio de verdade, o jeito mais simples e gratuito é usar uma conta do Gmail:
+**Importante se for publicar no Render (plano grátis):** desde setembro de 2025, o Render **bloqueia as portas de e-mail tradicional (SMTP)** no plano gratuito, por padrão de segurança deles — não é um bug do nosso código, é uma política deles pra evitar spam. Por isso, o sistema tem dois jeitos de enviar e-mail, e você deve escolher conforme onde for rodar:
+
+**Opção recomendada (funciona em qualquer lugar, inclusive Render grátis) — API do Brevo:**
+1. Crie uma conta grátis em **https://www.brevo.com** (300 e-mails grátis por dia)
+2. Vá em **Configurações** → **"SMTP & API"** → aba **"Chaves API e MCP"**
+3. Gere uma nova chave (**atenção:** é diferente da chave/login SMTP — essa é uma chave de API separada)
+4. Preencha no `.env` do backend:
+   ```
+   BREVO_API_KEY=a_chave_de_api_gerada
+   SMTP_FROM="FERRAZ <ferrazcollection@icloud.com>"
+   ```
+   (o `SMTP_FROM` continua sendo usado só pra definir o nome/e-mail que aparece como remetente, mesmo usando a API)
+5. Reinicie o backend
+
+**Opção alternativa (só funciona rodando local, ou em hospedagem paga) — SMTP tradicional:**
+
+Se estiver só testando no seu computador (XAMPP), o SMTP tradicional funciona sem problema — use uma conta do Gmail:
 
 1. Use (ou crie) uma conta do Gmail para a loja
 2. Ative a **verificação em duas etapas** na conta Google (obrigatório para o próximo passo)
