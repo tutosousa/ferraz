@@ -18,11 +18,6 @@ function urlPainelFrete(caminho) {
   return `${frontendUrl}/admin/frete.html${caminho}`;
 }
 
-// Etapa 1: o admin clica em "Conectar" no painel, que chama esta rota
-// (passando o próprio token de admin, já que é uma navegação de página
-// normal, sem como enviar cabeçalho Authorization). Confirma que quem
-// está pedindo a conexão é mesmo um admin logado, e só então redireciona
-// pro Melhor Envio.
 async function conectar(req, res) {
   try {
     if (!MELHOR_ENVIO_CONFIGURADO) {
@@ -41,7 +36,7 @@ async function conectar(req, res) {
       return res.status(401).send('Sessão de admin inválida ou expirada. Faça login de novo e tente conectar novamente.');
     }
 
-    const urlAutorizacao = gerarUrlAutorizacao();
+    const urlAutorizacao = await gerarUrlAutorizacao();
     res.redirect(urlAutorizacao);
   } catch (err) {
     console.error('Erro ao iniciar conexão com Melhor Envio:', err.message);
@@ -49,8 +44,6 @@ async function conectar(req, res) {
   }
 }
 
-// Etapa 2: o Melhor Envio manda o navegador de volta pra cá depois que o
-// admin autoriza. Trocamos o código pelo token de acesso de verdade.
 async function callback(req, res) {
   const { code, state, error } = req.query;
 
@@ -58,7 +51,8 @@ async function callback(req, res) {
     return res.redirect(urlPainelFrete(`?erro=${encodeURIComponent(error)}`));
   }
 
-  if (!code || !state || !validarState(state)) {
+  const stateValido = state && (await validarState(state));
+  if (!code || !stateValido) {
     return res.redirect(urlPainelFrete('?erro=estado_invalido'));
   }
 
