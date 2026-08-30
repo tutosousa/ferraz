@@ -18,7 +18,7 @@
       <span>FERRAZ</span>
     </a>
     <div class="site-header__acoes">
-      <a href="atacado.html" class="nav-link-secundario" id="link-atacado">Comprar no atacado</a>
+      <a href="atacado.html" class="nav-link-secundario" id="link-atacado">Atacado</a>
       <a href="conta.html" class="nav-link-secundario" id="link-conta">Entrar</a>
       <a href="carrinho.html" class="carrinho-link" id="link-carrinho">
         Carrinho
@@ -97,7 +97,7 @@ const modo = params.get('modo') === 'atacado' ? 'atacado' : 'varejo';
 document.body.dataset.modoCarrinho = modo;
 
 if (modo === 'atacado') {
-  document.getElementById('link-atacado').textContent = 'Comprar no varejo';
+  document.getElementById('link-atacado').textContent = 'Varejo';
   document.getElementById('link-atacado').href = 'index.html';
   document.getElementById('link-voltar').textContent = '← Voltar para o catálogo de atacado';
   document.getElementById('link-voltar').href = 'atacado.html';

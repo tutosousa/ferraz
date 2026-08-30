@@ -126,6 +126,10 @@
 
 .admin-main {
   padding: 32px;
+  min-width: 0; /* corrige um bug clássico do CSS Grid: sem isso, esta
+    coluna não consegue encolher menos que o conteúdo mais largo dela (ex:
+    uma tabela), mesmo com "rolar horizontal" configurado dentro dela —
+    o resultado era a PÁGINA INTEIRA ficando larga demais no celular. */
 }
 .admin-topo {
   display: flex;

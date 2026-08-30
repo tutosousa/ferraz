@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
 <body>
 
@@ -87,6 +88,9 @@
 document.getElementById('ano').textContent = new Date().getFullYear();
 
 const numero = new URLSearchParams(window.location.search).get('numero');
+let mpInstancia = null;
+let brickController = null;
+let pedidoAtual = null;
 
 async function carregarPedido() {
   const container = document.getElementById('conteudo-sucesso');
@@ -97,12 +101,20 @@ async function carregarPedido() {
 
   try {
     const pedido = await apiFetch(`/pedidos/numero/${encodeURIComponent(numero)}`);
+    pedidoAtual = pedido;
 
     const statusMensagem = pedido.status === 'pago'
       ? '<div class="alerta alerta-sucesso">Pagamento confirmado!</div>'
       : pedido.status === 'cancelado'
       ? '<div class="alerta alerta-erro">Este pagamento não foi aprovado. Você pode tentar novamente ou falar com a gente pelo WhatsApp.</div>'
-      : '<div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">Estamos aguardando a confirmação do seu pagamento. Isso pode levar alguns instantes — atualize esta página em breve.</div>';
+      : '<div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">Estamos aguardando a confirmação do seu pagamento. Se você ainda não pagou, clica no botão abaixo pra fazer isso agora.</div>';
+
+    // "Pagar agora" só aparece pra pedidos ainda pendentes — é o que
+    // permite voltar aqui mais tarde (mesmo depois de fechar a aba) e
+    // terminar de pagar, em vez de perder o pedido.
+    const botaoPagar = pedido.status === 'pendente'
+      ? `<button type="button" class="btn btn-primario btn-bloco btn-grande" id="btn-pagar-agora" style="margin-top:16px;">Pagar agora</button>`
+      : '';
 
     container.innerHTML = `
       <div style="max-width:520px; margin:0 auto; text-align:left;">
@@ -117,6 +129,8 @@ async function carregarPedido() {
           <div class="resumo-pedido__linha"><span>Subtotal</span><span>${formatarPreco(pedido.subtotal)}</span></div>
           <div class="resumo-pedido__linha resumo-pedido__linha--total"><span>Total</span><span>${formatarPreco(pedido.total)}</span></div>
         </div>
+        ${botaoPagar}
+        <div id="area-pagamento" style="margin-top:20px;"></div>
         <p class="texto-suave" style="margin-top:20px; font-size:0.9rem;">
           Enviaremos atualizações sobre o envio pelo telefone/e-mail informado no checkout.
         </p>
@@ -125,8 +139,96 @@ async function carregarPedido() {
         </div>
       </div>
     `;
+
+    const btnPagar = document.getElementById('btn-pagar-agora');
+    if (btnPagar) {
+      btnPagar.addEventListener('click', () => {
+        btnPagar.style.display = 'none';
+        iniciarPagamentoRetomado(pedido.total, pedido.cliente_email);
+      });
+    }
   } catch (err) {
     container.innerHTML = `<div class="alerta alerta-erro">Não foi possível localizar este pedido.</div>`;
+  }
+}
+
+// Reabre o mesmo formulário de pagamento (Payment Brick) pra um pedido que
+// já existe mas ainda não foi pago — a pessoa pode voltar nesta página a
+// qualquer momento (o link fica salvo na URL) e terminar de pagar, sem
+// precisar refazer o pedido do zero.
+async function iniciarPagamentoRetomado(total, emailPagador) {
+  const areaEl = document.getElementById('area-pagamento');
+  areaEl.innerHTML = `<div id="brick-container-retomado"></div><div id="resultado-pagamento-retomado"></div>`;
+  const resultadoEl = document.getElementById('resultado-pagamento-retomado');
+
+  try {
+    const config = await apiFetch('/pagamentos/config');
+    if (!config.ativo || !config.publicKey) {
+      resultadoEl.innerHTML = `<div class="alerta alerta-erro">O pagamento online ainda não foi configurado pela loja. <a href="https://wa.me/558196336445" target="_blank" rel="noopener">Entre em contato pelo WhatsApp</a> para finalizar seu pedido ${escapeHtml(numero)}.</div>`;
+      return;
+    }
+
+    mpInstancia = new MercadoPago(config.publicKey, { locale: 'pt-BR' });
+    if (brickController) await brickController.unmount();
+
+    const bricksBuilder = mpInstancia.bricks();
+    brickController = await bricksBuilder.create('payment', 'brick-container-retomado', {
+      initialization: {
+        amount: total,
+        payer: { email: emailPagador || undefined },
+      },
+      customization: {
+        paymentMethods: {
+          creditCard: 'all',
+          debitCard: 'all',
+          ticket: 'all',
+          bankTransfer: 'all',
+        },
+      },
+      callbacks: {
+        onReady: () => {},
+        onSubmit: ({ formData }) => {
+          return new Promise(async (resolve, reject) => {
+            try {
+              const resposta = await apiFetch('/pagamentos/processar', {
+                method: 'POST',
+                body: JSON.stringify({ numero_pedido: numero, formData }),
+              });
+              if (resposta.status === 'approved') {
+                window.location.reload();
+              } else if (resposta.status === 'rejected') {
+                resultadoEl.innerHTML = `<div class="alerta alerta-erro">Pagamento recusado. Verifique os dados ou tente outra forma de pagamento.</div>`;
+              } else {
+                let extra = '';
+                if (resposta.qr_code_base64) {
+                  extra += `
+                    <div style="text-align:center; margin-top:16px;">
+                      <img src="data:image/png;base64,${resposta.qr_code_base64}" alt="QR Code Pix" style="max-width:220px;">
+                      <p class="texto-suave" style="font-size:0.85rem;">Escaneie o QR code no app do seu banco, ou copie o código abaixo:</p>
+                      <textarea readonly style="width:100%; height:70px; font-size:0.75rem; padding:8px;">${escapeHtml(resposta.qr_code)}</textarea>
+                    </div>
+                  `;
+                }
+                if (resposta.ticket_url) {
+                  extra += `<p style="text-align:center; margin-top:16px;"><a href="${resposta.ticket_url}" target="_blank" rel="noopener" class="btn btn-primario">Ver / imprimir boleto</a></p>`;
+                }
+                resultadoEl.innerHTML = `<div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">Aguardando confirmação do pagamento.</div>${extra}`;
+              }
+              resolve();
+            } catch (err) {
+              resultadoEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+              reject();
+            }
+          });
+        },
+        onError: (error) => {
+          console.error('Erro no Payment Brick:', error);
+          resultadoEl.innerHTML = `<div class="alerta alerta-erro">Não foi possível carregar o formulário de pagamento. Recarregue a página e tente novamente.</div>`;
+        },
+      },
+    });
+  } catch (err) {
+    resultadoEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
   }
 }
 

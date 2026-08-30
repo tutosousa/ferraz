@@ -120,8 +120,17 @@ textarea:focus-visible {
 .site-header__acoes {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap; /* nunca quebra linha, custe o que custar */
+}
+
+.site-header__acoes .nav-link-secundario,
+.site-header__acoes .carrinho-link {
+  min-width: 0; /* permite encolher de verdade dentro do flex */
+  flex-shrink: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .nav-link-secundario {
@@ -138,6 +147,10 @@ textarea:focus-visible {
   color: var(--cor-primaria-escura);
   text-decoration: none;
 }
+
+/* No desktop, mostra o nome completo ("Olá, Fernanda"); no celular, mostra
+   só "Conta" — nomes longos não cabem ao lado do carrinho numa tela estreita. */
+.conta-texto-compacto { display: none; }
 .nav-link-atacado {
   background: var(--cor-primaria);
   color: #fff;
@@ -895,6 +908,11 @@ textarea:focus-visible {
   gap: 32px;
   align-items: start;
 }
+.conta-conteudo {
+  min-width: 0; /* mesmo bug do Grid do admin: sem isso, esta coluna não
+    consegue encolher menos que a tabela de "Meus pedidos", fazendo a
+    página inteira ficar larga demais no celular. */
+}
 .conta-menu {
   list-style: none;
   margin: 0;
@@ -956,11 +974,12 @@ textarea:focus-visible {
 
   .site-header__acoes {
     flex: 1 1 100%;
-    gap: 8px;
-    justify-content: space-between;
+    gap: 6px;
   }
-  .nav-link-secundario { padding: 8px 10px; font-size: 0.82rem; white-space: nowrap; }
-  .carrinho-link { padding: 8px 12px; font-size: 0.85rem; white-space: nowrap; }
+  .conta-texto-completo { display: none; }
+  .conta-texto-compacto { display: inline; }
+  .nav-link-secundario { padding: 8px 8px; font-size: 0.78rem; }
+  .carrinho-link { padding: 8px 10px; font-size: 0.78rem; }
 
   .secao { padding: 28px 0; }
   .produtos-grade { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; }

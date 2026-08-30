@@ -61,14 +61,19 @@ async function apiFetchCliente(path, options = {}) {
 }
 
 // Atualiza o link "Entrar" do cabeçalho para "Olá, Fulano" / "Minha conta"
-// quando o visitante já estiver logado como cliente.
+// quando o visitante já estiver logado como cliente. No celular, mostra só
+// "Conta" (compacto) em vez do nome completo — nomes longos empurravam o
+// botão do carrinho pra fora da linha, quebrando o layout.
 function atualizarLinkConta(elementId) {
   const link = document.getElementById(elementId);
   if (!link) return;
   const cliente = obterClienteLogado();
   if (cliente && obterTokenCliente()) {
     const primeiroNome = cliente.nome ? cliente.nome.split(' ')[0] : 'Minha conta';
-    link.textContent = `Olá, ${primeiroNome}`;
+    link.innerHTML = `
+      <span class="conta-texto-completo">Olá, ${escapeHtml(primeiroNome)}</span>
+      <span class="conta-texto-compacto">Conta</span>
+    `;
     link.href = 'conta.html';
   } else {
     link.textContent = 'Entrar';
