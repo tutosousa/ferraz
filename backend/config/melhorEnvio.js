@@ -27,6 +27,10 @@
 // Enquanto isso não for feito, o site roda em MODO SIMULADO: usa uma
 // tabela de frete fixo por região — ótimo pra testar sem configurar nada.
 
+// .trim() é uma proteção extra: é comum, ao copiar uma chave longa de uma
+// página, vir junto um espaço ou quebra de linha invisível no início/fim
+// sem a pessoa perceber — o que faz o Melhor Envio recusar a credencial
+// por não bater 100% igual, mesmo "parecendo" certa visualmente.
 const CLIENT_ID = (process.env.MELHOR_ENVIO_CLIENT_ID || '').trim();
 const CLIENT_SECRET = (process.env.MELHOR_ENVIO_CLIENT_SECRET || '').trim();
 const CEP_ORIGEM = (process.env.MELHOR_ENVIO_CEP_ORIGEM || '').trim();
@@ -56,6 +60,10 @@ const SCOPES = [
 function obterRedirectUri() {
   const backendUrl = (process.env.BACKEND_URL || '').trim();
   if (!backendUrl) return null;
+  // Remove barra(s) no final do BACKEND_URL, se houver — sem isso, um
+  // BACKEND_URL salvo como "https://site.com/" (com barra) geraria um
+  // endereço de callback com barra DUPLA ("...com//api/..."), que não bate
+  // com o que está cadastrado no Melhor Envio, causando falha silenciosa.
   const backendUrlLimpo = backendUrl.replace(/\/+$/, '');
   return `${backendUrlLimpo}/api/frete/melhor-envio/callback`;
 }
