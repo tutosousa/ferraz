@@ -54,9 +54,7 @@ async function createOrder(req, res, next) {
   const connection = await pool.getConnection();
   try {
     const {
-      cliente_nome,
       cliente_telefone,
-      cliente_email,
       endereco_rua,
       endereco_numero,
       endereco_bairro,
@@ -67,6 +65,13 @@ async function createOrder(req, res, next) {
       tipo_pedido, // 'varejo' (padrão) ou 'atacado'
       itens, // [{ produto_id, quantidade }]
     } = req.body;
+
+    // O checkout agora exige login — nome e e-mail vêm da CONTA autenticada
+    // (não do formulário), pra ninguém conseguir forjar em nome de outra
+    // pessoa. O telefone de contato continua vindo do formulário, já que
+    // pode ser diferente do telefone cadastrado na conta.
+    const cliente_nome = req.cliente.nome;
+    const cliente_email = req.cliente.email;
 
     const tipoPedido = tipo_pedido === 'atacado' ? 'atacado' : 'varejo';
 
@@ -189,7 +194,7 @@ async function createOrder(req, res, next) {
 
     // Se a compra foi feita por um cliente logado (token opcional verificado
     // pelo middleware attachCustomerIfPresent), vincula o pedido à conta dele.
-    const clienteId = req.cliente ? req.cliente.id : null;
+    const clienteId = req.cliente.id;
 
     const [pedidoResult] = await connection.query(
       `INSERT INTO pedidos

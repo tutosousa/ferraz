@@ -142,6 +142,7 @@ Troque essas senhas assim que possível em produção.
 - Criação de conta e login de cliente, com **confirmação por e-mail e login em duas etapas (2FA)** — veja a seção 7.1
 - Telefone único: não é possível cadastrar duas contas com o mesmo número
 - Medidor de força de senha e confirmação de senha no cadastro
+- **Login obrigatório para comprar** (varejo e atacado): sem conta, o cliente é levado pro login/cadastro e volta automaticamente pro checkout depois de entrar; nome e e-mail do pedido sempre vêm da conta logada (não dá pra digitar em nome de outra pessoa)
 - "Minha conta": editar dados, endereço, e ver histórico de pedidos
 
 **Loja de atacado — `atacado.html`:**

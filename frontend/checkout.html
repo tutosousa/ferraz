@@ -35,7 +35,7 @@
       <h3>Seus dados</h3>
       <div class="campo">
         <label for="cliente_nome">Nome completo</label>
-        <input type="text" id="cliente_nome" name="cliente_nome" required>
+        <input type="text" id="cliente_nome" name="cliente_nome" disabled>
       </div>
       <div class="campo-linha">
         <div class="campo">
@@ -44,9 +44,12 @@
         </div>
         <div class="campo">
           <label for="cliente_email">E-mail</label>
-          <input type="email" id="cliente_email" name="cliente_email" required>
+          <input type="email" id="cliente_email" name="cliente_email" disabled>
         </div>
       </div>
+      <p class="texto-suave" style="font-size:0.82rem; margin-top:-8px; margin-bottom:16px;">
+        Nome e e-mail vêm da sua conta. <a href="conta.html">Editar meus dados</a>
+      </p>
 
       <h3>Endereço de entrega</h3>
       <div class="campo">
@@ -157,6 +160,10 @@ document.getElementById('ano').textContent = new Date().getFullYear();
 const params = new URLSearchParams(window.location.search);
 const modo = params.get('modo') === 'atacado' ? 'atacado' : 'varejo';
 document.body.dataset.modoCarrinho = modo;
+
+// Checkout agora exige login — sem conta, redireciona pro login e volta
+// pra cá (com o mesmo modo, varejo ou atacado) depois de entrar.
+exigirLoginCliente();
 
 const carrinho = obterCarrinho(modo);
 let freteAtual = 0;

@@ -76,10 +76,12 @@ function atualizarLinkConta(elementId) {
   }
 }
 
-// Redireciona para o login se o visitante não estiver logado. Usado no
-// topo da página "conta.html".
+// Redireciona para o login se o visitante não estiver logado — e, depois
+// de logar, traz a pessoa de volta exatamente pra página (e modo, ex:
+// atacado) de onde ela veio, em vez de perder o contexto.
 function exigirLoginCliente() {
   if (!obterTokenCliente()) {
-    window.location.href = 'login.html';
+    const paginaAtual = window.location.pathname.split('/').pop() + window.location.search;
+    window.location.href = `login.html?depois=${encodeURIComponent(paginaAtual)}`;
   }
 }

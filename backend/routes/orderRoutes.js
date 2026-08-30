@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAdminAuth } = require('../middleware/auth');
-const { attachCustomerIfPresent } = require('../middleware/customerAuth');
+const { requireCustomerAuth } = require('../middleware/customerAuth');
 const {
   createOrder,
   getOrderByNumber,
@@ -11,10 +11,11 @@ const {
   updateOrderStatus,
 } = require('../controllers/orderController');
 
-// Pública (checkout / confirmação) — attachCustomerIfPresent detecta se o
-// comprador está logado, sem obrigar login (permite compra como visitante).
+// Checkout agora EXIGE login do cliente (não é mais permitido comprar como
+// visitante) — requireCustomerAuth barra a requisição com 401 se não vier
+// um token de cliente válido.
 router.post('/frete', getShippingQuote);
-router.post('/', attachCustomerIfPresent, createOrder);
+router.post('/', requireCustomerAuth, createOrder);
 router.get('/numero/:numero', getOrderByNumber);
 
 // Admin
