@@ -14,20 +14,19 @@ const {
   obterRedirectUri,
 } = require('../config/melhorEnvio');
 
-// Guarda temporariamente os "state" (proteção contra CSRF) gerados ao
-// iniciar a autorização, só até o callback confirmar. Não precisa ser
-// persistente — se o servidor reiniciar no meio do processo, o admin só
-// precisa clicar em "Conectar" de novo.
-const statesEmAndamento = new Map();
+// Guarda os "state" (proteção contra CSRF) gerados ao iniciar a
+// autorização, NO BANCO DE DADOS — não em memória — pra sobreviver caso o
+// servidor reinicie ou "durma" (comum em planos gratuitos como o Render)
+// entre o clique em "Conectar" e a volta autorizada do Melhor Envio.
 
-function gerarUrlAutorizacao() {
+async function gerarUrlAutorizacao() {
   const state = crypto.randomBytes(16).toString('hex');
-  statesEmAndamento.set(state, Date.now());
 
-  // Limpa states velhos (mais de 10 minutos), pra não vazar memória
-  for (const [s, criadoEm] of statesEmAndamento) {
-    if (Date.now() - criadoEm > 10 * 60 * 1000) statesEmAndamento.delete(s);
-  }
+  await pool.query('INSERT INTO melhor_envio_oauth_states (state) VALUES (?)', [state]);
+  // Limpa states velhos (mais de 30 minutos), pra não acumular lixo
+  await pool.query(
+    'DELETE FROM melhor_envio_oauth_states WHERE criado_em < NOW() - INTERVAL 30 MINUTE'
+  );
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -40,10 +39,14 @@ function gerarUrlAutorizacao() {
   return `${AUTHORIZE_URL}?${params.toString()}`;
 }
 
-function validarState(state) {
-  const valido = statesEmAndamento.has(state);
-  if (valido) statesEmAndamento.delete(state);
-  return valido;
+async function validarState(state) {
+  const [rows] = await pool.query(
+    'SELECT state FROM melhor_envio_oauth_states WHERE state = ?',
+    [state]
+  );
+  if (rows.length === 0) return false;
+  await pool.query('DELETE FROM melhor_envio_oauth_states WHERE state = ?', [state]);
+  return true;
 }
 
 async function salvarTokens(dados) {
@@ -57,21 +60,46 @@ async function salvarTokens(dados) {
 }
 
 // Troca o "código" recebido no callback por um token de acesso de verdade.
+//
+// IMPORTANTE: diferente do resto da API do Melhor Envio (que usa JSON), as
+// rotas de autenticação OAuth2 (/oauth/token) esperam o corpo no formato
+// tradicional de formulário (application/x-www-form-urlencoded), não JSON
+// — a própria documentação deles avisa essa exceção.
 async function trocarCodigoPorToken(code) {
+  const redirectUri = obterRedirectUri();
+
+  // Log de diagnóstico: mostra exatamente o que está sendo enviado (nunca
+  // o Secret completo, só os primeiros e últimos caracteres, o suficiente
+  // pra conferir sem expor a chave inteira no log).
+  console.log(
+    `📤 Enviando ao Melhor Envio: client_id="${CLIENT_ID}", ` +
+    `secret="${CLIENT_SECRET.slice(0, 4)}...${CLIENT_SECRET.slice(-4)}" (${CLIENT_SECRET.length} chars), ` +
+    `redirect_uri="${redirectUri}"`
+  );
+
+  const corpo = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    redirect_uri: redirectUri,
+    code,
+  });
+
+  // Além de mandar client_id/client_secret no corpo (jeito mais comum),
+  // também mandamos no cabeçalho "Authorization: Basic" — alguns
+  // servidores OAuth2 exigem especificamente esse método pra autenticar o
+  // aplicativo, mesmo com os dados certos no corpo.
+  const credenciaisBasic = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+
   const resposta = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${credenciaisBasic}`,
       'User-Agent': 'FERRAZ E-commerce (ferrazcollection@icloud.com)',
     },
-    body: JSON.stringify({
-      grant_type: 'authorization_code',
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      redirect_uri: obterRedirectUri(),
-      code,
-    }),
+    body: corpo.toString(),
   });
 
   if (!resposta.ok) {
@@ -85,21 +113,23 @@ async function trocarCodigoPorToken(code) {
 }
 
 // Pede um token novo usando o refresh_token guardado, quando o atual
-// estiver perto de vencer.
+// estiver perto de vencer. Mesma observação sobre form-urlencoded acima.
 async function renovarToken(refreshToken) {
+  const corpo = new URLSearchParams({
+    grant_type: 'refresh_token',
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    refresh_token: refreshToken,
+  });
+
   const resposta = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
       'User-Agent': 'FERRAZ E-commerce (ferrazcollection@icloud.com)',
     },
-    body: JSON.stringify({
-      grant_type: 'refresh_token',
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      refresh_token: refreshToken,
-    }),
+    body: corpo.toString(),
   });
 
   if (!resposta.ok) {

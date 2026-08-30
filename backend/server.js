@@ -91,4 +91,15 @@ app.listen(PORT, async () => {
   console.log(`\n🟢 API FERRAZ rodando em http://localhost:${PORT}`);
   await testConnection();
   await testarConexaoEmail();
+
+  // Diagnóstico do Melhor Envio: mostra só o TAMANHO das credenciais (nunca
+  // o valor), pra ajudar a identificar se alguma foi colada incompleta ou
+  // com espaço a mais — sem expor a chave em si no log.
+  const { MELHOR_ENVIO_CONFIGURADO, CLIENT_ID, CLIENT_SECRET, obterRedirectUri } = require('./config/melhorEnvio');
+  if (MELHOR_ENVIO_CONFIGURADO) {
+    console.log(
+      `📦 Melhor Envio configurado (Client ID: ${CLIENT_ID.length} caracteres, Secret: ${CLIENT_SECRET.length} caracteres)`
+    );
+    console.log(`📦 URL de callback usada: ${obterRedirectUri()}`);
+  }
 });
