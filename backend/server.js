@@ -93,4 +93,11 @@ app.listen(PORT, async () => {
   console.log(`\n🟢 API FERRAZ rodando em http://localhost:${PORT}`);
   await testConnection();
   await testarConexaoEmail();
+
+  const { MELHOR_ENVIO_CONFIGURADO, CLIENT_ID, CLIENT_SECRET } = require('./config/melhorEnvio');
+  if (MELHOR_ENVIO_CONFIGURADO) {
+    console.log(
+      `📦 Melhor Envio configurado (Client ID: ${CLIENT_ID.length} caracteres, Secret: ${CLIENT_SECRET.length} caracteres)`
+    );
+  }
 });
