@@ -57,21 +57,28 @@ async function salvarTokens(dados) {
 }
 
 // Troca o "código" recebido no callback por um token de acesso de verdade.
+//
+// IMPORTANTE: diferente do resto da API do Melhor Envio (que usa JSON), as
+// rotas de autenticação OAuth2 (/oauth/token) esperam o corpo no formato
+// tradicional de formulário (application/x-www-form-urlencoded), não JSON
+// — a própria documentação deles avisa essa exceção.
 async function trocarCodigoPorToken(code) {
+  const corpo = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    redirect_uri: obterRedirectUri(),
+    code,
+  });
+
   const resposta = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
       'User-Agent': 'FERRAZ E-commerce (ferrazcollection@icloud.com)',
     },
-    body: JSON.stringify({
-      grant_type: 'authorization_code',
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      redirect_uri: obterRedirectUri(),
-      code,
-    }),
+    body: corpo.toString(),
   });
 
   if (!resposta.ok) {
@@ -85,21 +92,23 @@ async function trocarCodigoPorToken(code) {
 }
 
 // Pede um token novo usando o refresh_token guardado, quando o atual
-// estiver perto de vencer.
+// estiver perto de vencer. Mesma observação sobre form-urlencoded acima.
 async function renovarToken(refreshToken) {
+  const corpo = new URLSearchParams({
+    grant_type: 'refresh_token',
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    refresh_token: refreshToken,
+  });
+
   const resposta = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
       'User-Agent': 'FERRAZ E-commerce (ferrazcollection@icloud.com)',
     },
-    body: JSON.stringify({
-      grant_type: 'refresh_token',
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      refresh_token: refreshToken,
-    }),
+    body: corpo.toString(),
   });
 
   if (!resposta.ok) {
