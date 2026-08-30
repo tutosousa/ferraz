@@ -27,9 +27,9 @@
 // Enquanto isso não for feito, o site roda em MODO SIMULADO: usa uma
 // tabela de frete fixo por região — ótimo pra testar sem configurar nada.
 
-const CLIENT_ID = process.env.MELHOR_ENVIO_CLIENT_ID;
-const CLIENT_SECRET = process.env.MELHOR_ENVIO_CLIENT_SECRET;
-const CEP_ORIGEM = process.env.MELHOR_ENVIO_CEP_ORIGEM;
+const CLIENT_ID = (process.env.MELHOR_ENVIO_CLIENT_ID || '').trim();
+const CLIENT_SECRET = (process.env.MELHOR_ENVIO_CLIENT_SECRET || '').trim();
+const CEP_ORIGEM = (process.env.MELHOR_ENVIO_CEP_ORIGEM || '').trim();
 
 // A aplicação foi cadastrada em ambiente de PRODUÇÃO do Melhor Envio (não
 // no Sandbox), então usamos sempre o domínio de produção.
