@@ -54,9 +54,10 @@ const SCOPES = [
 ].join(' ');
 
 function obterRedirectUri() {
-  const backendUrl = process.env.BACKEND_URL;
+  const backendUrl = (process.env.BACKEND_URL || '').trim();
   if (!backendUrl) return null;
-  return `${backendUrl}/api/frete/melhor-envio/callback`;
+  const backendUrlLimpo = backendUrl.replace(/\/+$/, '');
+  return `${backendUrlLimpo}/api/frete/melhor-envio/callback`;
 }
 
 // "Configurado" = tem as credenciais necessárias pra SEQUER começar o
