@@ -20,6 +20,14 @@ const melhorEnvioRoutes = require('./routes/melhorEnvioRoutes');
 
 const app = express();
 
+// O Render (e praticamente toda hospedagem em nuvem) coloca a aplicação
+// atrás de um proxy reverso, que repassa o IP real do visitante no
+// cabeçalho "X-Forwarded-For". Sem avisar o Express disso, o middleware de
+// limite de tentativas (express-rate-limit) trava a requisição inteira com
+// erro — é por isso que login, cadastro, etc paravam de funcionar quando
+// publicado, mesmo funcionando perfeitamente local.
+app.set('trust proxy', 1);
+
 // ---------- Middlewares globais ----------
 
 // Cabeçalhos de segurança HTTP (proteção contra clickjacking, sniffing de
