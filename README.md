@@ -150,10 +150,6 @@ Troque essas senhas assim que possível em produção.
 - Pedido mínimo de 12 peças no TOTAL do carrinho (pode misturar modelos diferentes)
 - Sem frete fixo (combinado à parte com o cliente)
 
-**Frete real — Melhor Envio:**
-- Cotação com várias transportadoras (Correios, Jadlog, etc), com preço e prazo reais, direto no checkout — veja a seção 8
-- Enquanto não configurado, funciona em modo simulado (frete fixo por região) para você testar e demonstrar
-
 **Pagamento — checkout invisível:**
 - O cliente paga (Pix, cartão ou boleto) **sem sair do site**, direto na página de checkout — veja a seção 7
 - Enquanto não configurado, funciona em modo simulado (aprova na hora, sem cobrança real) para você testar e demonstrar
@@ -286,42 +282,17 @@ O fluxo é: a pessoa digita o e-mail → recebe um código de 6 dígitos (por e-
 
 ---
 
-## 8. Frete — cotação real com o Melhor Envio
+## 8. Frete
 
-O checkout de **varejo** mostra opções de frete de verdade (transportadora, prazo e preço), consultadas em tempo real no **Melhor Envio** — o mesmo agregador de fretes (Correios, Jadlog, e outras) usado por grandes e-commerces.
+Implementado como **frete fixo por região** para pedidos de **varejo** (mais simples e previsível do que integrar uma API externa de frete). A tabela de valores está em `backend/services/shipping.js`, na constante `FRETE_POR_REGIAO` — ajuste os valores conforme sua operação real.
 
-Enquanto o Melhor Envio não estiver conectado, o site roda em **modo simulado**: usa uma tabela de frete fixo por região como reserva (não trava o checkout, só não mostra várias opções de transportadora).
+Pedidos de **atacado** não têm frete fixo (fica combinado diretamente com o cliente, já que o volume varia muito) — o campo aparece como R$ 0,00 no pedido, e o combinado do frete acontece fora do site.
 
-**Atenção:** o Melhor Envio exige um login OAuth2 (parecido com "Entrar com Google") — não é mais um token fixo simples. São dois passos: primeiro configurar as credenciais no `.env`, depois **autorizar de fato** clicando num botão no painel admin.
-
-### Passo a passo para ativar o frete real
-
-1. Crie uma conta em **https://www.melhorenvio.com.br**
-2. Vá em **"Integrações"** → **"Área Dev."** → **"Cadastrar aplicativo"**
-3. Preencha o formulário:
-   - **Site da plataforma / URL do ambiente de testes:** o endereço do seu backend publicado (ex: `https://ferraz-backend.onrender.com`)
-   - **URL de redirecionamento após autorização (callback):** o mesmo endereço + `/api/frete/melhor-envio/callback` (ex: `https://ferraz-backend.onrender.com/api/frete/melhor-envio/callback`)
-   - Desative a opção **"Permitir que o usuário altere as configurações de transportadora"** (é só pra uso interno de vocês, não pra outras lojas)
-4. Depois de cadastrar, copie o **Client ID** e o **Secret** mostrados
-5. No `.env` do backend, preencha:
-   ```
-   MELHOR_ENVIO_CLIENT_ID=o_client_id_copiado
-   MELHOR_ENVIO_CLIENT_SECRET=o_secret_copiado
-   MELHOR_ENVIO_CEP_ORIGEM=00000000
-   ```
-   (`MELHOR_ENVIO_CEP_ORIGEM` é o CEP de onde a loja despacha os pedidos — só números, sem hífen. E confirme que `BACKEND_URL` também está preenchido no `.env`, com o mesmo endereço usado no callback)
-6. Reinicie o backend
-7. Entre no **painel admin** → aba **"Frete"** → clique em **"Conectar com Melhor Envio"** — isso abre a tela de login/autorização deles; depois de autorizar, você volta pro painel já conectado
-
-A partir daí, o checkout passa a mostrar cotações reais automaticamente. O token de acesso expira a cada 30 dias, mas o sistema **renova sozinho** (usando o token de renovação, válido por 45 dias) — não precisa refazer esse processo periodicamente, só na primeira vez.
+> **Nota:** uma integração com o Melhor Envio (cotação real com múltiplas transportadoras) chegou a ser implementada, mas ficou travada num erro específico do lado da conta/aplicativo deles (`invalid_client` persistente, mesmo com tudo configurado corretamente e confirmado pelo suporte) — foi removida por enquanto. Pode ser reimplementada no futuro se o suporte deles resolver a causa.
 
 ### Peso e dimensões dos produtos
 
-O cálculo de frete real precisa saber o peso e o tamanho de cada peça (embalada). Isso já vem com valores padrão razoáveis (0,3kg, 5×25×35cm — uma peça de roupa dobrada), mas você pode ajustar produto por produto na tela de edição do admin, na seção "Peso e dimensões" — quanto mais preciso, mais exato fica o valor do frete cobrado.
-
-### Pedidos de atacado
-
-Pedidos de **atacado** continuam sem frete fixo pelo site (aparece R$ 0,00) — o volume varia demais pra cotação automática fazer sentido, então o envio é combinado diretamente com o cliente fora do checkout, como já era antes.
+Os campos de peso e dimensões continuam disponíveis na tela de edição de produto no admin (seção "Peso e dimensões") — não são usados pelo frete fixo atual, mas ficam prontos caso uma integração de frete real seja adicionada de volta no futuro.
 
 ---
 
@@ -437,9 +408,6 @@ Isso cria o banco `ferraz_ecommerce` com todas as tabelas e dados de exemplo den
    SMTP_USER     = (seu e-mail, se for usar Gmail)
    SMTP_PASS     = (a senha de app do Gmail, se for usar)
    SMTP_FROM     = "FERRAZ <seuemail@gmail.com>"
-   MELHOR_ENVIO_CLIENT_ID     = (deixe em branco se ainda não tiver — veja a seção 8)
-   MELHOR_ENVIO_CLIENT_SECRET = (idem)
-   MELHOR_ENVIO_CEP_ORIGEM    = (o CEP de onde a loja despacha os pedidos)
    ```
    (deixe `FRONTEND_URL=*` por enquanto — vamos ajustar depois de publicar o frontend)
 6. Clique **"Create Web Service"**

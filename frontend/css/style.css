@@ -982,12 +982,22 @@ textarea:focus-visible {
   .hero h1, .banner-atacado h1 { font-size: 1.7rem; }
   .hero p, .banner-atacado p { font-size: 1rem; }
 
-  .site-header__top { padding: 12px 0; gap: 12px; }
+  .site-header__top {
+    padding: 12px 0;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .site-header__logo { flex: 1 1 100%; }
   .site-header__logo img { width: 36px; height: 36px; }
   .site-header__logo span { font-size: 1.1rem; }
-  .site-header__acoes { gap: 8px; }
-  .nav-link-secundario { padding: 8px 10px; font-size: 0.85rem; }
-  .carrinho-link { padding: 8px 12px; font-size: 0.9rem; }
+
+  .site-header__acoes {
+    flex: 1 1 100%;
+    gap: 8px;
+    justify-content: space-between;
+  }
+  .nav-link-secundario { padding: 8px 10px; font-size: 0.82rem; white-space: nowrap; }
+  .carrinho-link { padding: 8px 12px; font-size: 0.85rem; white-space: nowrap; }
 
   .secao { padding: 28px 0; }
   .produtos-grade { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; }

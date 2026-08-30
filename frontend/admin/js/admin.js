@@ -78,7 +78,6 @@ function montarSidebarAdmin(paginaAtiva) {
     { href: 'dashboard.html', label: 'Visão geral', chave: 'dashboard' },
     { href: 'produtos.html', label: 'Produtos', chave: 'produtos' },
     { href: 'categorias.html', label: 'Categorias', chave: 'categorias' },
-    { href: 'frete.html', label: 'Frete', chave: 'frete' },
     { href: 'pedidos.html', label: 'Pedidos', chave: 'pedidos' },
     { href: 'financeiro.html', label: 'Financeiro', chave: 'financeiro' },
   ];
