@@ -6,7 +6,7 @@
 //   const API_BASE_URL = `${BACKEND_ORIGIN}/api`;
 //
 // Enquanto estiver testando no seu computador, deixe como está (localhost).
-const BACKEND_ORIGIN = 'https://ferraz.onrender.com';
+const BACKEND_ORIGIN = 'http://localhost:5000';
 const API_BASE_URL = `${BACKEND_ORIGIN}/api`;
 
 /**
