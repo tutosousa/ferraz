@@ -94,10 +94,10 @@ app.listen(PORT, async () => {
   await testConnection();
   await testarConexaoEmail();
 
-  const { MELHOR_ENVIO_CONFIGURADO, CLIENT_ID, CLIENT_SECRET } = require('./config/melhorEnvio');
+  const { MELHOR_ENVIO_CONFIGURADO, CLIENT_ID, CLIENT_SECRET, obterRedirectUri } = require('./config/melhorEnvio');
   if (MELHOR_ENVIO_CONFIGURADO) {
     console.log(
       `📦 Melhor Envio configurado (Client ID: ${CLIENT_ID.length} caracteres, Secret: ${CLIENT_SECRET.length} caracteres)`
     );
+    console.log(`📦 URL de callback usada: ${obterRedirectUri()}`);
   }
-});
