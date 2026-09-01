@@ -349,10 +349,21 @@ async function setImagemCor(req, res, next) {
 async function deleteProduct(req, res, next) {
   try {
     const { id } = req.params;
-    // Exclusão "lógica": marca como inativo em vez de apagar, preservando
-    // o histórico de pedidos que já referenciam esse produto.
-    await pool.query('UPDATE produtos SET ativo = 0 WHERE id = ?', [id]);
-    res.json({ message: 'Produto removido (desativado) com sucesso.' });
+
+    const [existing] = await pool.query('SELECT id FROM produtos WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Produto não encontrado.' });
+    }
+
+    // Exclusão de verdade (não é só marcar como inativo) — as fotos, cores
+    // e tamanhos desse produto são apagados automaticamente junto (o banco
+    // está configurado com ON DELETE CASCADE nessas tabelas). Pedidos
+    // antigos que já continham esse produto continuam intactos: eles
+    // guardam o nome e o preço de quando a compra foi feita, então o
+    // histórico do cliente e do financeiro não é afetado.
+    await pool.query('DELETE FROM produtos WHERE id = ?', [id]);
+
+    res.json({ message: 'Produto excluído com sucesso.' });
   } catch (err) {
     next(err);
   }

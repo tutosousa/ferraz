@@ -143,31 +143,39 @@
         </div>
         <p class="texto-suave" style="font-size:0.8rem; margin-top:4px;">
           Você pode selecionar várias fotos de uma vez (segure Ctrl ou Shift para escolher mais de uma).
-          Ao editar um produto, novas fotos são ADICIONADAS às já existentes.
+          Ao editar um produto, novas fotos são ADICIONADAS às já existentes. Se o produto tiver cores, uma
+          forma mais fácil de adicionar foto por cor é usar os cards de cor logo abaixo.
         </p>
-      </div>
-      <div id="galeria-atual-produto" style="display:none;">
-        <label>Fotos já cadastradas</label>
-        <p class="texto-suave" style="font-size:0.8rem; margin-bottom:6px;">Escolha a cor de cada foto — assim, quando o cliente selecionar aquela cor na loja, essas fotos aparecem automaticamente.</p>
-        <div id="galeria-atual-lista" class="galeria-admin-lista"></div>
       </div>
 
       <div id="secao-variacoes" style="display:none;">
         <hr style="margin:24px 0; border:none; border-top:1px solid var(--cor-linha);">
 
-        <label>Cores disponíveis</label>
-        <div id="lista-cores" class="lista-tags-admin"></div>
-        <div class="acoes-linha" style="margin-top:10px; flex-wrap:wrap;">
-          <input type="text" id="nova_cor_nome" placeholder="Nome da cor (ex: Verde)" style="flex:1; min-width:140px; padding:10px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
-          <input type="color" id="nova_cor_hex" value="#5EC5B5" title="Cor de referência" style="width:44px; height:40px; border:1.5px solid var(--cor-linha); border-radius:4px; padding:2px; cursor:pointer;">
+        <label>Cores do produto</label>
+        <p class="texto-suave" style="font-size:0.82rem; margin-bottom:12px;">
+          Cada cor tem sua própria foto. Quando a pessoa escolher essa cor na loja, essa foto aparece automaticamente no lugar da foto principal.
+        </p>
+        <div id="cards-cores" class="cards-cores-admin"></div>
+        <div id="alerta-cores" style="margin-top:10px;"></div>
+        <div class="acoes-linha" style="margin-top:14px; flex-wrap:wrap;">
+          <input type="text" id="nova_cor_nome" placeholder="Nome da nova cor (ex: Verde)" style="flex:1; min-width:160px; padding:10px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
+          <input type="color" id="nova_cor_hex" value="#5EC5B5" title="Cor de referência (aparece como bolinha)" style="width:44px; height:40px; border:1.5px solid var(--cor-linha); border-radius:4px; padding:2px; cursor:pointer;">
           <button type="button" class="btn btn-secundario" id="btn-add-cor">+ Adicionar cor</button>
         </div>
 
-        <label style="display:block; margin-top:22px;">Tamanhos disponíveis</label>
+        <label style="display:block; margin-top:26px;">Tamanhos disponíveis</label>
         <div id="lista-tamanhos" class="lista-tags-admin"></div>
         <div class="acoes-linha" style="margin-top:10px;">
           <input type="text" id="novo_tamanho" placeholder="Ex: PP, P, M, G, GG" style="flex:1; padding:10px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
           <button type="button" class="btn btn-secundario" id="btn-add-tamanho">+ Adicionar tamanho</button>
+        </div>
+
+        <div id="fotos-gerais-secao" style="margin-top:26px; display:none;">
+          <label>Outras fotos do produto (sem cor específica)</label>
+          <p class="texto-suave" style="font-size:0.8rem; margin-bottom:6px;">
+            Essas fotos aparecem quando nenhuma cor está selecionada na loja (ex: a foto principal do produto).
+          </p>
+          <div id="fotos-gerais-lista" class="galeria-admin-lista"></div>
         </div>
       </div>
       <p class="texto-suave" id="aviso-salve-primeiro" style="font-size:0.85rem; margin-top:16px;">
@@ -246,7 +254,6 @@ function abrirModalNovo() {
   document.getElementById('produto_id').value = '';
   document.getElementById('p_qtd_minima').value = 50;
   document.getElementById('alerta-modal').innerHTML = '';
-  document.getElementById('galeria-atual-produto').style.display = 'none';
   document.getElementById('secao-variacoes').style.display = 'none';
   document.getElementById('aviso-salve-primeiro').style.display = 'block';
   document.getElementById('upload-fotos-status').textContent = 'Nenhuma foto selecionada';
@@ -280,8 +287,7 @@ async function abrirModalEdicao(produtoId) {
     document.getElementById('p_largura').value = produto.largura_cm || 25;
     document.getElementById('p_comprimento').value = produto.comprimento_cm || 35;
 
-    renderizarGaleriaAtual(produto);
-    renderizarCores(produto.cores || []);
+    renderizarCores(produto);
     renderizarTamanhos(produto.tamanhos || []);
   } catch (err) {
     document.getElementById('alerta-modal').innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
@@ -291,105 +297,144 @@ async function abrirModalEdicao(produtoId) {
 async function recarregarProdutoNoModal() {
   const produtoId = document.getElementById('produto_id').value;
   const produto = await apiFetchAdmin(`/produtos/admin/${produtoId}`);
-  renderizarGaleriaAtual(produto);
-  renderizarCores(produto.cores || []);
+  renderizarCores(produto);
   return produto;
 }
 
-function renderizarGaleriaAtual(produto) {
-  const container = document.getElementById('galeria-atual-produto');
-  const lista = document.getElementById('galeria-atual-lista');
-  const imagens = produto.imagens || [];
+// ---------- Cores (cards visuais, cada uma com sua própria foto) ----------
+
+function renderizarCores(produto) {
   const cores = produto.cores || [];
+  const imagens = produto.imagens || [];
+  const container = document.getElementById('cards-cores');
+  const fotosGeraisSecao = document.getElementById('fotos-gerais-secao');
+  const fotosGeraisLista = document.getElementById('fotos-gerais-lista');
 
-  if (imagens.length === 0) {
-    container.style.display = 'none';
-    return;
-  }
-
-  container.style.display = 'block';
-
-  const opcoesCores = (corAtualId) => `
-    <option value="">Sem cor (geral)</option>
-    ${cores.map((c) => `<option value="${c.id}" ${c.id === corAtualId ? 'selected' : ''}>${escapeHtml(c.nome)}</option>`).join('')}
-  `;
-
-  lista.innerHTML = imagens.map((img) => `
-    <div class="galeria-admin-item">
-      <img src="${BACKEND_ORIGIN}${img.imagem_url}" alt="Foto do produto">
-      <button type="button" class="galeria-admin-item__remover" data-imagem-id="${img.id}" title="Remover esta foto">✕</button>
-      ${cores.length > 0 ? `
-        <select class="galeria-admin-item__cor" data-imagem-id="${img.id}">
-          ${opcoesCores(img.cor_id)}
-        </select>
-      ` : ''}
-    </div>
-  `).join('');
-
-  lista.querySelectorAll('.galeria-admin-item__remover').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Remover esta foto do produto?')) return;
-      try {
-        const produtoId = document.getElementById('produto_id').value;
-        await apiFetchAdmin(`/produtos/admin/${produtoId}/imagens/${btn.dataset.imagemId}`, {
-          method: 'DELETE',
-        });
-        await recarregarProdutoNoModal();
-      } catch (err) {
-        alert(err.message);
-      }
-    });
-  });
-
-  lista.querySelectorAll('.galeria-admin-item__cor').forEach((select) => {
-    select.addEventListener('change', async () => {
-      try {
-        const produtoId = document.getElementById('produto_id').value;
-        await apiFetchAdmin(`/produtos/admin/${produtoId}/imagens/${select.dataset.imagemId}/cor`, {
-          method: 'PUT',
-          body: JSON.stringify({ cor_id: select.value || null }),
-        });
-      } catch (err) {
-        alert(err.message);
-      }
-    });
-  });
-}
-
-// ---------- Cores ----------
-
-function renderizarCores(cores) {
-  const container = document.getElementById('lista-cores');
   if (cores.length === 0) {
-    container.innerHTML = `<p class="texto-suave" style="font-size:0.85rem;">Nenhuma cor cadastrada ainda.</p>`;
-    return;
-  }
-  container.innerHTML = cores.map((c) => `
-    <span class="tag-admin">
-      ${c.codigo_hex ? `<span class="tag-admin__bolinha" style="background:${escapeHtml(c.codigo_hex)}"></span>` : ''}
-      ${escapeHtml(c.nome)}
-      <button type="button" data-remover-cor="${c.id}" aria-label="Remover cor ${escapeHtml(c.nome)}">✕</button>
-    </span>
-  `).join('');
+    container.innerHTML = `<p class="texto-suave" style="font-size:0.85rem;">Nenhuma cor cadastrada ainda — adicione a primeira cor abaixo.</p>`;
+  } else {
+    container.innerHTML = cores.map((c) => {
+      const fotos = imagens.filter((img) => img.cor_id === c.id);
+      const primeiraFoto = fotos[0];
+      return `
+        <div class="card-cor-admin" data-cor-id="${c.id}">
+          <div class="card-cor-admin__cabecalho">
+            <span class="card-cor-admin__bolinha" style="background:${escapeHtml(c.codigo_hex || '#ccc')}"></span>
+            <strong>${escapeHtml(c.nome)}</strong>
+            <button type="button" class="card-cor-admin__remover" data-remover-cor="${c.id}" title="Remover esta cor" aria-label="Remover cor ${escapeHtml(c.nome)}">✕</button>
+          </div>
+          <div class="card-cor-admin__foto">
+            ${primeiraFoto
+              ? `<img src="${BACKEND_ORIGIN}${primeiraFoto.imagem_url}" alt="Foto da cor ${escapeHtml(c.nome)}">`
+              : `<div class="card-cor-admin__sem-foto">Nenhuma foto ainda</div>`
+            }
+          </div>
+          ${fotos.length > 1 ? `<p class="texto-suave" style="font-size:0.75rem; text-align:center; margin:4px 0;">+${fotos.length - 1} foto(s) extra</p>` : ''}
+          <label class="upload-fotos__botao card-cor-admin__botao-foto">
+            <span class="upload-fotos__icone">📷</span>
+            ${primeiraFoto ? 'Adicionar outra foto' : 'Selecionar foto'}
+            <input type="file" hidden class="input-foto-cor" data-cor-id="${c.id}" accept="image/png,image/jpeg,image/webp,image/gif">
+          </label>
+          ${fotos.length > 0 ? `<button type="button" class="link-acao link-acao--perigo" style="margin-top:6px; display:block; text-align:center; width:100%;" data-remover-foto-cor="${primeiraFoto.id}">Remover foto desta cor</button>` : ''}
+        </div>
+      `;
+    }).join('');
 
-  container.querySelectorAll('[data-remover-cor]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Remover esta cor? As fotos vinculadas a ela voltam a ser fotos gerais.')) return;
-      try {
-        const produtoId = document.getElementById('produto_id').value;
-        await apiFetchAdmin(`/produtos/admin/${produtoId}/cores/${btn.dataset.removerCor}`, { method: 'DELETE' });
-        await recarregarProdutoNoModal();
-      } catch (err) {
-        alert(err.message);
-      }
+    // Botão remover cor
+    container.querySelectorAll('[data-remover-cor]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remover esta cor? A foto vinculada a ela deixa de aparecer como opção de cor (mas não é apagada, vira uma foto geral do produto).')) return;
+        try {
+          const produtoId = document.getElementById('produto_id').value;
+          await apiFetchAdmin(`/produtos/admin/${produtoId}/cores/${btn.dataset.removerCor}`, { method: 'DELETE' });
+          await recarregarProdutoNoModal();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
     });
-  });
+
+    // Botão remover a foto específica de uma cor
+    container.querySelectorAll('[data-remover-foto-cor]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remover esta foto?')) return;
+        try {
+          const produtoId = document.getElementById('produto_id').value;
+          await apiFetchAdmin(`/produtos/admin/${produtoId}/imagens/${btn.dataset.removerFotoCor}`, { method: 'DELETE' });
+          await recarregarProdutoNoModal();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+
+    // Upload direto de foto pra cor específica — um clique só, já sobe a
+    // foto E já vincula ela àquela cor, sem etapa nenhuma no meio.
+    container.querySelectorAll('.input-foto-cor').forEach((input) => {
+      input.addEventListener('change', async (e) => {
+        const arquivo = e.target.files[0];
+        if (!arquivo) return;
+        const corId = input.dataset.corId;
+        const alertaEl = document.getElementById('alerta-cores');
+        alertaEl.innerHTML = `<p class="texto-suave" style="font-size:0.85rem;">Enviando foto...</p>`;
+
+        try {
+          const produtoId = document.getElementById('produto_id').value;
+          const formData = new FormData();
+          formData.append('imagens', arquivo);
+          formData.append('cor_id', corId);
+          await apiFetchAdmin(`/produtos/admin/${produtoId}`, { method: 'PUT', body: formData });
+          alertaEl.innerHTML = '';
+          await recarregarProdutoNoModal();
+        } catch (err) {
+          alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+        }
+      });
+    });
+  }
+
+  // Fotos que não pertencem a nenhuma cor (ex: a foto principal/capa do
+  // produto) continuam listadas à parte, com botão simples de remover.
+  const fotosGerais = imagens.filter((img) => !img.cor_id);
+  if (fotosGerais.length === 0) {
+    fotosGeraisSecao.style.display = 'none';
+  } else {
+    fotosGeraisSecao.style.display = 'block';
+    fotosGeraisLista.innerHTML = fotosGerais.map((img) => `
+      <div class="galeria-admin-item">
+        <img src="${BACKEND_ORIGIN}${img.imagem_url}" alt="Foto do produto">
+        <button type="button" class="galeria-admin-item__remover" data-imagem-id="${img.id}" title="Remover esta foto">✕</button>
+      </div>
+    `).join('');
+
+    fotosGeraisLista.querySelectorAll('.galeria-admin-item__remover').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remover esta foto do produto?')) return;
+        try {
+          const produtoId = document.getElementById('produto_id').value;
+          await apiFetchAdmin(`/produtos/admin/${produtoId}/imagens/${btn.dataset.imagemId}`, {
+            method: 'DELETE',
+          });
+          await recarregarProdutoNoModal();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  }
 }
 
 document.getElementById('btn-add-cor').addEventListener('click', async () => {
-  const nome = document.getElementById('nova_cor_nome').value.trim();
+  const nomeInput = document.getElementById('nova_cor_nome');
+  const nome = nomeInput.value.trim();
   const hex = document.getElementById('nova_cor_hex').value;
-  if (!nome) return;
+  const alertaEl = document.getElementById('alerta-cores');
+  alertaEl.innerHTML = '';
+
+  if (!nome) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">Digite um nome pra cor antes de adicionar.</div>`;
+    return;
+  }
 
   try {
     const produtoId = document.getElementById('produto_id').value;
@@ -397,10 +442,10 @@ document.getElementById('btn-add-cor').addEventListener('click', async () => {
       method: 'POST',
       body: JSON.stringify({ nome, codigo_hex: hex }),
     });
-    document.getElementById('nova_cor_nome').value = '';
+    nomeInput.value = '';
     await recarregarProdutoNoModal();
   } catch (err) {
-    alert(err.message);
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
   }
 });
 
@@ -498,7 +543,7 @@ document.getElementById('form-produto').addEventListener('submit', async (e) => 
 });
 
 async function removerProduto(id) {
-  if (!confirm('Tem certeza que deseja remover este produto? Ele deixará de aparecer na loja.')) return;
+  if (!confirm('Tem certeza que deseja excluir este produto? Essa ação não pode ser desfeita — o produto, suas fotos, cores e tamanhos serão apagados permanentemente.')) return;
   try {
     await apiFetchAdmin(`/produtos/admin/${id}`, { method: 'DELETE' });
     carregarProdutos();

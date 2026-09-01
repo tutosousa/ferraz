@@ -377,12 +377,72 @@ table.tabela-admin tbody tr:hover { background: #fafcfc; }
 }
 .tag-admin button:hover { color: var(--cor-erro); }
 
-.galeria-admin-item__cor {
-  width: 100%;
-  margin-top: 4px;
-  font-size: 0.72rem;
-  padding: 3px 4px;
-  border: 1px solid var(--cor-linha);
-  border-radius: 3px;
-  font-family: inherit;
+/* ------------------------------ Cards de cor (admin) ------------------------------ */
+.cards-cores-admin {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
 }
+.card-cor-admin {
+  border: 1.5px solid var(--cor-linha);
+  border-radius: var(--raio);
+  padding: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+.card-cor-admin__cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.card-cor-admin__cabecalho strong {
+  flex: 1;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-cor-admin__bolinha {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+.card-cor-admin__remover {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  padding: 2px 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.card-cor-admin__remover:hover { color: var(--cor-erro); }
+.card-cor-admin__foto {
+  aspect-ratio: 3/4;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f5f7f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.card-cor-admin__foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-cor-admin__sem-foto {
+  color: var(--cor-texto-suave);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 8px;
+}
+.card-cor-admin__botao-foto {
+  width: 100%;
+  justify-content: center;
+  font-size: 0.8rem;
+  padding: 8px 10px;
+}
+
