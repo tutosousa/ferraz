@@ -317,12 +317,11 @@ async function atualizarPerfil(req, res, next) {
 
 async function meusPedidos(req, res, next) {
   try {
-    // Pedidos cancelados pelo admin não aparecem mais aqui — o filtro é
-    // feito direto na consulta ao banco, então some de verdade (não é só
-    // escondido na tela; recarregar a página ou entrar de novo na conta
-    // não traz ele de volta).
+    // Traz TODOS os pedidos do cliente (incluindo entregues e cancelados)
+    // — o frontend é quem organiza cada um na aba certa (Pedidos /
+    // Entregues / Cancelados), com base no status real de cada um.
     const [pedidos] = await pool.query(
-      "SELECT * FROM pedidos WHERE cliente_id = ? AND status != 'cancelado' ORDER BY criado_em DESC",
+      'SELECT * FROM pedidos WHERE cliente_id = ? ORDER BY criado_em DESC',
       [req.cliente.id]
     );
     res.json(pedidos);

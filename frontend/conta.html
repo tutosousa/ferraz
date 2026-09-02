@@ -104,6 +104,13 @@
       <div id="aba-pedidos" style="display:none;">
         <div class="admin-painel">
           <div class="admin-painel__cabecalho"><h3 style="margin:0;">Meus pedidos</h3></div>
+
+          <ul class="sub-abas-pedidos" id="sub-abas-pedidos">
+            <li><a href="#" data-sub-aba="ativos" class="ativo">Pedidos</a></li>
+            <li><a href="#" data-sub-aba="entregue">Entregues</a></li>
+            <li><a href="#" data-sub-aba="cancelado">Cancelados</a></li>
+          </ul>
+
           <div style="overflow-x:auto;">
             <table class="tabela-admin">
               <thead><tr><th>Nº do pedido</th><th>Data</th><th>Tipo</th><th>Total</th><th>Status</th></tr></thead>
@@ -237,27 +244,69 @@ function formatarData(dataStr) {
   return new Date(dataStr).toLocaleDateString('pt-BR');
 }
 
+// Guarda a lista completa (todos os status) já buscada do backend, pra não
+// precisar buscar de novo toda vez que a pessoa troca de sub-aba.
+let todosOsPedidosCache = null;
+let subAbaAtiva = 'ativos';
+
+// Cada pedido pertence a EXATAMENTE uma dessas 3 categorias, decidida pelo
+// status real vindo do banco — nunca por CSS ou por "esconder" elemento.
+function statusPertenceA(status, categoria) {
+  if (categoria === 'entregue') return status === 'entregue';
+  if (categoria === 'cancelado') return status === 'cancelado';
+  // "ativos" = tudo que não é nem entregue nem cancelado (pendente, pago, enviado)
+  return status !== 'entregue' && status !== 'cancelado';
+}
+
+function renderizarTabelaPedidos() {
+  const tbody = document.getElementById('tabela-meus-pedidos');
+  if (!todosOsPedidosCache) return;
+
+  const filtrados = todosOsPedidosCache.filter((p) => statusPertenceA(p.status, subAbaAtiva));
+
+  if (filtrados.length === 0) {
+    const mensagens = {
+      ativos: 'Você não tem nenhum pedido em andamento no momento.',
+      entregue: 'Nenhum pedido entregue ainda.',
+      cancelado: 'Nenhum pedido cancelado.',
+    };
+    tbody.innerHTML = `<tr><td colspan="5">${mensagens[subAbaAtiva]}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtrados.map((p) => `
+    <tr>
+      <td>${escapeHtml(p.numero_pedido)}</td>
+      <td>${formatarData(p.criado_em)}</td>
+      <td>${p.tipo_pedido === 'atacado' ? 'Atacado' : 'Varejo'}</td>
+      <td>${formatarPreco(p.total)}</td>
+      <td><span class="badge badge-${p.status}">${escapeHtml(p.status)}</span></td>
+    </tr>
+  `).join('');
+}
+
 async function carregarMeusPedidos() {
   const tbody = document.getElementById('tabela-meus-pedidos');
   try {
-    const pedidos = await apiFetchCliente('/clientes/meus-pedidos');
-    if (pedidos.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5">Você ainda não fez nenhum pedido.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = pedidos.map((p) => `
-      <tr>
-        <td>${escapeHtml(p.numero_pedido)}</td>
-        <td>${formatarData(p.criado_em)}</td>
-        <td>${p.tipo_pedido === 'atacado' ? 'Atacado' : 'Varejo'}</td>
-        <td>${formatarPreco(p.total)}</td>
-        <td><span class="badge badge-${p.status}">${escapeHtml(p.status)}</span></td>
-      </tr>
-    `).join('');
+    // Sempre busca de novo do backend (não confia em cache velho) — assim,
+    // se o admin mudou o status de algum pedido, a próxima vez que a
+    // pessoa abrir "Meus pedidos" já reflete a mudança real.
+    todosOsPedidosCache = await apiFetchCliente('/clientes/meus-pedidos');
+    renderizarTabelaPedidos();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="5">${escapeHtml(err.message)}</td></tr>`;
   }
 }
+
+document.querySelectorAll('#sub-abas-pedidos [data-sub-aba]').forEach((link) => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('#sub-abas-pedidos [data-sub-aba]').forEach((l) => l.classList.remove('ativo'));
+    link.classList.add('ativo');
+    subAbaAtiva = link.dataset.subAba;
+    renderizarTabelaPedidos();
+  });
+});
 
 carregarPerfil();
 </script>

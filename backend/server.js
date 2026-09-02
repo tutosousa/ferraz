@@ -91,4 +91,16 @@ app.listen(PORT, async () => {
   console.log(`\n🟢 API FERRAZ rodando em http://localhost:${PORT}`);
   await testConnection();
   await testarConexaoEmail();
+
+  // Diagnóstico do Mercado Pago: mostra só o TAMANHO das credenciais
+  // (nunca o valor), pra ajudar a identificar se alguma foi colada
+  // incompleta ou com espaço a mais.
+  const { MP_ATIVO, MP_PUBLIC_KEY } = require('./config/mercadopago');
+  if (MP_ATIVO) {
+    console.log(
+      `💳 Mercado Pago configurado (Access Token: ${(process.env.MP_ACCESS_TOKEN || '').trim().length} caracteres, Public Key: ${(MP_PUBLIC_KEY || '').length} caracteres)`
+    );
+  } else {
+    console.log('💳 Mercado Pago NÃO configurado — checkout rodando em modo simulado (aprova na hora, sem cobrança real).');
+  }
 });

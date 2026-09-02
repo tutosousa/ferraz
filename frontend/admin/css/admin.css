@@ -183,6 +183,31 @@
   gap: 12px;
 }
 
+.sub-abas-pedidos {
+  list-style: none;
+  margin: 0;
+  padding: 0 24px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--cor-linha);
+}
+.sub-abas-pedidos a {
+  display: inline-block;
+  padding: 12px 14px;
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+}
+.sub-abas-pedidos a:hover,
+.sub-abas-pedidos a.ativo {
+  color: var(--cor-primaria-escura);
+  border-bottom-color: var(--cor-primaria);
+  text-decoration: none;
+}
+
 table.tabela-admin {
   width: 100%;
   border-collapse: collapse;
