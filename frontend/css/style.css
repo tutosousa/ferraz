@@ -673,41 +673,6 @@ textarea:focus-visible {
   color: var(--cor-texto-suave);
 }
 
-/* ---------------------------- Categorias em destaque ---------------------------- */
-.secao-categorias {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-.categorias-destaque {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-.categoria-destaque-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 22px 20px;
-  border: 1px solid var(--cor-linha);
-  border-radius: var(--raio);
-  background: #fff;
-  color: var(--cor-texto);
-}
-.categoria-destaque-card:hover {
-  border-color: var(--cor-primaria);
-  background: var(--cor-primaria-clara);
-  text-decoration: none;
-}
-.categoria-destaque-card__nome {
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-.categoria-destaque-card__seta {
-  font-size: 0.85rem;
-  color: var(--cor-primaria-escura);
-  font-weight: 600;
-}
-
 /* --------------------------------- Seção de ajuda -------------------------------- */
 .secao-ajuda {
   background: var(--cor-primaria-clara);
@@ -741,7 +706,7 @@ textarea:focus-visible {
   flex-wrap: wrap;
   background: linear-gradient(120deg, #2f7d70, #5EC5B5 60%, #7fd6c8);
   border-radius: 12px;
-  padding: 32px 40px;
+  padding: 24px 32px;
   margin: 32px 0;
   color: #fff;
   text-decoration: none;
@@ -759,31 +724,31 @@ textarea:focus-visible {
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .banner-promo-atacado__texto h2 {
   color: #fff;
-  font-size: 1.55rem;
-  margin-bottom: 8px;
+  font-size: 1.4rem;
+  margin-bottom: 6px;
 }
 .banner-promo-atacado__texto p {
   color: rgba(255,255,255,0.94);
   margin: 0;
   max-width: 520px;
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 .banner-promo-atacado__botao {
   flex-shrink: 0;
   background: #fff;
   color: var(--cor-primaria-escura);
   font-weight: 700;
-  padding: 14px 26px;
+  padding: 12px 24px;
   border-radius: var(--raio);
   white-space: nowrap;
 }
 @media (max-width: 640px) {
-  .banner-promo-atacado { padding: 24px; }
-  .banner-promo-atacado__texto h2 { font-size: 1.25rem; }
+  .banner-promo-atacado { padding: 20px; }
+  .banner-promo-atacado__texto h2 { font-size: 1.15rem; }
 }
 
 /* ------------------------------ Banner de atacado ------------------------------ */

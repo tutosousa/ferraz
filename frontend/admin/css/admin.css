@@ -278,6 +278,16 @@ table.tabela-admin tbody tr:hover { background: #fafcfc; }
 }
 .link-acao--perigo { color: var(--cor-erro); }
 
+/* Botões de ação nas tabelas (Editar, Excluir) ficavam baixos demais pra
+   tocar confortavelmente no celular — aumenta só a área de toque aqui,
+   sem alterar a aparência no desktop. */
+@media (max-width: 860px) {
+  .link-acao {
+    padding: 11px 12px;
+    font-size: 0.88rem;
+  }
+}
+
 .galeria-admin-lista {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));

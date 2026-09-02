@@ -34,6 +34,14 @@
     </div>
   </nav>
 </header>
+
+<section class="hero">
+  <div class="container">
+    <h1>Moda atemporal, feita para durar.</h1>
+    <p>Aqui, você pode comprar a partir de 1 peça pelo preço de varejo. Para aproveitar nosso preço de atacado, acesse a aba Atacado aqui em cima.</p>
+  </div>
+</section>
+
 <section class="container">
   <a href="atacado.html" class="banner-promo-atacado">
     <div class="banner-promo-atacado__texto">
@@ -43,15 +51,6 @@
     </div>
     <span class="banner-promo-atacado__botao">Comprar no atacado →</span>
   </a>
-</section>
-
-<section class="secao secao-categorias">
-  <div class="container">
-    <h2>Compre por categoria</h2>
-    <div class="categorias-destaque" id="categorias-destaque">
-      <p class="carregando">Carregando categorias...</p>
-    </div>
-  </div>
 </section>
 
 <main class="container secao">
@@ -149,21 +148,9 @@ async function carregarCategorias() {
       li.appendChild(a);
       menu.appendChild(li);
     });
-
-    renderizarCategoriasDestaque(categorias);
   } catch (err) {
     console.error('Erro ao carregar categorias:', err);
   }
-}
-
-function renderizarCategoriasDestaque(categorias) {
-  const container = document.getElementById('categorias-destaque');
-  container.innerHTML = categorias.map((cat) => `
-    <a href="index.html?categoria=${encodeURIComponent(cat.slug)}" class="categoria-destaque-card">
-      <span class="categoria-destaque-card__nome">${escapeHtml(cat.nome)}</span>
-      <span class="categoria-destaque-card__seta">Ver peças →</span>
-    </a>
-  `).join('');
 }
 
 function renderizarProdutoCard(produto) {
