@@ -114,6 +114,31 @@ CREATE TABLE codigos_recuperacao_senha (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- Tabela: melhor_envio_conexao (guarda o token de acesso OAuth2 do
+-- Melhor Envio depois que o admin autoriza a integração — só existe uma
+-- linha, que vai sendo atualizada conforme o token é renovado)
+-- ---------------------------------------------------------------------
+CREATE TABLE melhor_envio_conexao (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  expira_em DATETIME NOT NULL,
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Tabela: melhor_envio_oauth_states (proteção contra CSRF durante o
+-- login/autorização do Melhor Envio — guardada no banco, não em memória,
+-- pra sobreviver a reinícios do servidor entre o clique em "Conectar" e
+-- a volta autorizada)
+-- ---------------------------------------------------------------------
+CREATE TABLE melhor_envio_oauth_states (
+  state VARCHAR(64) PRIMARY KEY,
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- Tabela: produto_cores (variações de cor de um produto, ex: Verde, Azul)
 -- ---------------------------------------------------------------------
 CREATE TABLE produto_cores (
@@ -134,6 +159,25 @@ CREATE TABLE produto_tamanhos (
   tamanho VARCHAR(20) NOT NULL,
   ordem INT NOT NULL DEFAULT 0,
   FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- Tabela: produto_variacoes (estoque de cada combinação cor+tamanho de
+-- um produto — ex: "Azul + M" tem 6 unidades, "Azul + G" tem 4, etc).
+-- cor_id e/ou tamanho_id ficam NULL quando o produto não usa aquela
+-- variação (ex: produto só com tamanho, sem cor). Produtos que não usam
+-- variação nenhuma continuam com o campo produtos.estoque de sempre.
+-- ---------------------------------------------------------------------
+CREATE TABLE produto_variacoes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  produto_id INT NOT NULL,
+  cor_id INT DEFAULT NULL,
+  tamanho_id INT DEFAULT NULL,
+  estoque INT NOT NULL DEFAULT 0,
+  UNIQUE KEY unico_produto_cor_tamanho (produto_id, cor_id, tamanho_id),
+  FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE,
+  FOREIGN KEY (cor_id) REFERENCES produto_cores(id) ON DELETE CASCADE,
+  FOREIGN KEY (tamanho_id) REFERENCES produto_tamanhos(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -174,6 +218,8 @@ CREATE TABLE pedidos (
   forma_pagamento VARCHAR(50) DEFAULT 'simulado',
   mp_preference_id VARCHAR(120) DEFAULT NULL,
   mp_payment_id VARCHAR(120) DEFAULT NULL,
+  frete_descricao VARCHAR(150) DEFAULT NULL, -- ex: "Correios - PAC"
+  frete_prazo_dias INT DEFAULT NULL,
   criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;

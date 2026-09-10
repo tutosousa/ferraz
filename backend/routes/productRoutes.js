@@ -17,6 +17,7 @@ const {
   deleteColor,
   createSize,
   deleteSize,
+  salvarVariacoesEstoque,
 } = require('../controllers/productController');
 
 // Pública (loja)
@@ -42,5 +43,8 @@ router.delete('/admin/:id/cores/:corId', requireAdminAuth, deleteColor);
 // Tamanhos
 router.post('/admin/:id/tamanhos', requireAdminAuth, createSize);
 router.delete('/admin/:id/tamanhos/:tamanhoId', requireAdminAuth, deleteSize);
+
+// Estoque por combinação cor+tamanho
+router.put('/admin/:id/variacoes', requireAdminAuth, salvarVariacoesEstoque);
 
 module.exports = router;

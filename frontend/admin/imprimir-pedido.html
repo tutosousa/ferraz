@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comprovante do pedido</title>
+<style>
+  /* Documento próprio pra impressão — sem menu, sem sidebar, sem nada do
+     resto do painel. Pensado pra caber numa folha A4. */
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #111;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .cabecalho {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #111;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .cabecalho h1 { font-size: 20px; margin: 0 0 4px; }
+  .cabecalho p { margin: 0; color: #555; font-size: 13px; }
+  .numero-pedido { text-align: right; font-size: 15px; font-weight: bold; }
+  .secao { margin-bottom: 20px; }
+  .secao h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #555;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+  .linha-dado { display: flex; gap: 8px; margin-bottom: 3px; }
+  .linha-dado strong { min-width: 90px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #ddd; font-size: 13px; }
+  th { color: #555; font-weight: 600; }
+  .totais { margin-top: 10px; width: 100%; max-width: 280px; margin-left: auto; }
+  .totais div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .totais .total-final { font-weight: bold; font-size: 16px; border-top: 2px solid #111; margin-top: 6px; padding-top: 8px; }
+  .rodape { margin-top: 30px; text-align: center; color: #888; font-size: 11px; }
+
+  .barra-acoes { text-align: center; margin-bottom: 24px; }
+  .barra-acoes button {
+    background: #1a8a75; color: #fff; border: none; padding: 10px 22px;
+    border-radius: 6px; font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+
+  @media print {
+    .barra-acoes { display: none; }
+    body { padding: 0; max-width: 100%; }
+  }
+
+  /* Versão compacta pra impressora térmica (58mm/80mm) — ativa só se a
+     pessoa escolher esse tamanho de papel na hora de imprimir. */
+  @media print and (max-width: 80mm) {
+    body { font-size: 11px; padding: 4px; }
+    .cabecalho { flex-direction: column; }
+    .numero-pedido { text-align: left; margin-top: 6px; }
+    table, th, td { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="barra-acoes">
+  <button onclick="window.print()">🖨️ Imprimir</button>
+</div>
+
+<div id="conteudo">Carregando pedido...</div>
+
+<script src="../js/api.js"></script>
+<script src="js/admin.js"></script>
+<script>
+function formatarData(dataStr) {
+  return new Date(dataStr).toLocaleString('pt-BR');
+}
+
+async function carregarPedido() {
+  const id = new URLSearchParams(window.location.search).get('id');
+  const conteudoEl = document.getElementById('conteudo');
+
+  if (!obterTokenAdmin()) {
+    conteudoEl.innerHTML = '<p>Sessão de admin não encontrada. Abra esta página a partir do painel administrativo.</p>';
+    return;
+  }
+  if (!id) {
+    conteudoEl.innerHTML = '<p>Pedido não especificado.</p>';
+    return;
+  }
+
+  try {
+    const pedido = await apiFetchAdmin(`/pedidos/admin/${id}`);
+
+    const enderecoCompleto = [
+      pedido.endereco_rua && `${pedido.endereco_rua}, ${pedido.endereco_numero || 's/n'}`,
+      pedido.endereco_bairro,
+    ].filter(Boolean).join(' — ');
+
+    conteudoEl.innerHTML = `
+      <div class="cabecalho">
+        <div>
+          <h1>FERRAZ</h1>
+          <p>Comprovante do pedido — separação e envio</p>
+        </div>
+        <div class="numero-pedido">
+          Pedido ${escapeHtml(pedido.numero_pedido)}<br>
+          <span style="font-weight:normal; font-size:12px; color:#555;">${formatarData(pedido.criado_em)}</span>
+        </div>
+      </div>
+
+      <div class="secao">
+        <h2>Dados da cliente</h2>
+        <div class="linha-dado"><strong>Nome:</strong> ${escapeHtml(pedido.cliente_nome)}</div>
+        <div class="linha-dado"><strong>Telefone:</strong> ${escapeHtml(pedido.cliente_telefone || '—')}</div>
+        ${pedido.cliente_email ? `<div class="linha-dado"><strong>E-mail:</strong> ${escapeHtml(pedido.cliente_email)}</div>` : ''}
+      </div>
+
+      <div class="secao">
+        <h2>Endereço de entrega</h2>
+        <div class="linha-dado"><strong>Endereço:</strong> ${escapeHtml(enderecoCompleto || '—')}</div>
+        <div class="linha-dado"><strong>Cidade/UF:</strong> ${escapeHtml(pedido.endereco_cidade || '—')}/${escapeHtml(pedido.endereco_estado || '—')}</div>
+        <div class="linha-dado"><strong>CEP:</strong> ${escapeHtml(pedido.endereco_cep || '—')}</div>
+      </div>
+
+      <div class="secao">
+        <h2>Produtos</h2>
+        <table>
+          <thead><tr><th>Produto</th><th>Cor</th><th>Tam.</th><th>Qtd</th><th>Valor</th></tr></thead>
+          <tbody>
+            ${pedido.itens.map((item) => `
+              <tr>
+                <td>${escapeHtml(item.nome_produto)}</td>
+                <td>${escapeHtml(item.cor || '—')}</td>
+                <td>${escapeHtml(item.tamanho || '—')}</td>
+                <td>${item.quantidade}</td>
+                <td>${formatarPreco(item.subtotal)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="totais">
+        <div><span>Subtotal</span><span>${formatarPreco(pedido.subtotal)}</span></div>
+        <div><span>Frete${pedido.frete_descricao ? ` (${escapeHtml(pedido.frete_descricao)})` : ''}</span><span>${pedido.frete > 0 ? formatarPreco(pedido.frete) : 'Grátis'}</span></div>
+        <div class="total-final"><span>Total</span><span>${formatarPreco(pedido.total)}</span></div>
+      </div>
+
+      <div class="secao" style="margin-top:20px;">
+        <div class="linha-dado"><strong>Pagamento:</strong> ${escapeHtml(pedido.forma_pagamento || '—')}</div>
+        <div class="linha-dado"><strong>Status:</strong> ${escapeHtml(pedido.status)}</div>
+      </div>
+
+      <div class="rodape">FERRAZ — este documento não substitui nota fiscal.</div>
+    `;
+  } catch (err) {
+    conteudoEl.innerHTML = `<p>${escapeHtml(err.message)}</p>`;
+  }
+}
+
+carregarPedido();
+</script>
+</body>
+</html>

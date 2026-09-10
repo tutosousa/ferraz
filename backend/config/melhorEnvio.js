@@ -24,8 +24,8 @@
 //   6. Reiniciar o backend, entrar no painel admin, aba "Frete", e clicar
 //      em "Conectar com Melhor Envio" pra autorizar de fato.
 //
-// Enquanto isso não for feito, o site roda em MODO SIMULADO: usa uma
-// tabela de frete fixo por região — ótimo pra testar sem configurar nada.
+// Enquanto isso não for feito, o site roda em MODO SIMULADO: frete grátis
+// (o padrão atual da loja), sem cálculo nenhum.
 
 // .trim() é uma proteção extra: é comum, ao copiar uma chave longa de uma
 // página, vir junto um espaço ou quebra de linha invisível no início/fim
@@ -42,9 +42,6 @@ const AUTHORIZE_URL = `${BASE_URL}/oauth/authorize`;
 const TOKEN_URL = `${BASE_URL}/oauth/token`;
 const API_BASE_URL = `${BASE_URL}/api/v2`;
 
-// Permissões pedidas ao usuário na hora de autorizar: cotação de frete,
-// consulta de transportadoras, e o necessário pra futuramente comprar e
-// gerar etiquetas direto pelo painel admin.
 const SCOPES = [
   'shipping-calculate',
   'shipping-companies',
@@ -68,8 +65,6 @@ function obterRedirectUri() {
   return `${backendUrlLimpo}/api/frete/melhor-envio/callback`;
 }
 
-// "Configurado" = tem as credenciais necessárias pra SEQUER começar o
-// processo de autorização (isso não significa que já foi autorizado).
 const MELHOR_ENVIO_CONFIGURADO = Boolean(
   CLIENT_ID && CLIENT_SECRET && CEP_ORIGEM && obterRedirectUri()
 );

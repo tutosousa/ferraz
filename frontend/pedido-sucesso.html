@@ -127,6 +127,7 @@ async function carregarPedido() {
           <div class="resumo-pedido__linha"><span>Número do pedido</span><strong>${escapeHtml(pedido.numero_pedido)}</strong></div>
           <div class="resumo-pedido__linha"><span>Status</span><span>${escapeHtml(pedido.status)}</span></div>
           <div class="resumo-pedido__linha"><span>Subtotal</span><span>${formatarPreco(pedido.subtotal)}</span></div>
+          <div class="resumo-pedido__linha"><span>Frete</span><span>${pedido.frete > 0 ? formatarPreco(pedido.frete) : 'Grátis'}</span></div>
           <div class="resumo-pedido__linha resumo-pedido__linha--total"><span>Total</span><span>${formatarPreco(pedido.total)}</span></div>
         </div>
         ${botaoPagar}

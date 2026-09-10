@@ -16,6 +16,7 @@ const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const financeRoutes = require('./routes/financeRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const melhorEnvioRoutes = require('./routes/melhorEnvioRoutes');
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/produtos', productRoutes);
 app.use('/api/pedidos', orderRoutes);
 app.use('/api/financeiro', financeRoutes);
 app.use('/api/pagamentos', paymentRoutes);
+app.use('/api/frete', melhorEnvioRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'FERRAZ E-commerce API' });
@@ -102,5 +104,13 @@ app.listen(PORT, async () => {
     );
   } else {
     console.log('💳 Mercado Pago NÃO configurado — checkout rodando em modo simulado (aprova na hora, sem cobrança real).');
+  }
+
+  const { MELHOR_ENVIO_CONFIGURADO, CLIENT_ID: ME_CLIENT_ID, obterRedirectUri } = require('./config/melhorEnvio');
+  if (MELHOR_ENVIO_CONFIGURADO) {
+    console.log(`📦 Melhor Envio configurado (Client ID: ${ME_CLIENT_ID.length} caracteres)`);
+    console.log(`📦 URL de callback usada: ${obterRedirectUri()}`);
+  } else {
+    console.log('📦 Melhor Envio NÃO configurado — frete rodando em modo simulado (grátis).');
   }
 });

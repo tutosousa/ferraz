@@ -32,7 +32,7 @@
         <p class="texto-suave">Acompanhe e atualize o status de cada pedido</p>
       </div>
       <select id="filtro-status" class="campo" style="width:220px; padding:12px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
-        <option value="">Todos os status</option>
+        <option value="">Pedidos ativos</option>
         <option value="pendente">Pendente</option>
         <option value="pago">Pago</option>
         <option value="enviado">Enviado</option>
@@ -40,6 +40,9 @@
         <option value="cancelado">Cancelado</option>
       </select>
     </div>
+    <p class="texto-suave" style="font-size:0.82rem; margin-top:-16px; margin-bottom:16px;">
+      Pedidos "Enviado" ou "Cancelado" saem da lista de ativos automaticamente — escolha esses status aqui no filtro pra vê-los quando precisar.
+    </p>
 
     <div id="alerta-pedidos"></div>
 
@@ -49,11 +52,11 @@
           <thead>
             <tr>
               <th>Nº do pedido</th><th>Cliente</th><th>Cidade/UF</th>
-              <th>Total</th><th>Status</th><th>Data</th><th>Atualizar status</th>
+              <th>Total</th><th>Status</th><th>Data</th><th>Atualizar status</th><th>Comprovante</th>
             </tr>
           </thead>
           <tbody id="tabela-pedidos">
-            <tr><td colspan="7">Carregando...</td></tr>
+            <tr><td colspan="8">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -83,7 +86,7 @@ async function carregarPedidos() {
     const pedidos = await apiFetchAdmin(`/pedidos/admin/all${query}`);
 
     if (pedidos.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7">Nenhum pedido encontrado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8">Nenhum pedido encontrado.</td></tr>`;
       return;
     }
 
@@ -100,6 +103,9 @@ async function carregarPedidos() {
             ${STATUS_OPCOES.map((s) => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
         </td>
+        <td>
+          <a href="imprimir-pedido.html?id=${p.id}" target="_blank" class="link-acao">🖨️ Imprimir</a>
+        </td>
       </tr>
     `).join('');
 
@@ -107,7 +113,7 @@ async function carregarPedidos() {
       select.addEventListener('change', () => atualizarStatus(select.dataset.id, select.value));
     });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 

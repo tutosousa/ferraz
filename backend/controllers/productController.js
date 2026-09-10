@@ -62,6 +62,10 @@ async function getPublicProduct(req, res, next) {
       'SELECT id, tamanho FROM produto_tamanhos WHERE produto_id = ? ORDER BY ordem ASC, id ASC',
       [id]
     );
+    const [variacoes] = await pool.query(
+      'SELECT cor_id, tamanho_id, estoque FROM produto_variacoes WHERE produto_id = ?',
+      [id]
+    );
 
     // Fotos "gerais" (sem cor vinculada) — mostradas quando nenhuma cor
     // está selecionada, ou como fallback se a cor escolhida não tiver fotos.
@@ -84,6 +88,7 @@ async function getPublicProduct(req, res, next) {
       galeria: galeriaGeral,
       cores: coresComFotos,
       tamanhos,
+      variacoes,
     });
   } catch (err) {
     next(err);
@@ -128,7 +133,40 @@ async function getAdminProduct(req, res, next) {
       'SELECT id, tamanho FROM produto_tamanhos WHERE produto_id = ? ORDER BY ordem ASC, id ASC',
       [id]
     );
-    res.json({ ...rows[0], imagens, cores, tamanhos });
+    const [variacoes] = await pool.query(
+      'SELECT id, cor_id, tamanho_id, estoque FROM produto_variacoes WHERE produto_id = ?',
+      [id]
+    );
+    res.json({ ...rows[0], imagens, cores, tamanhos, variacoes });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Salva de uma vez só o estoque de cada combinação cor+tamanho de um
+// produto (a "tabela" que o admin preenche na tela). Recebe um array:
+// [{ cor_id, tamanho_id, estoque }, ...] — cor_id e/ou tamanho_id podem
+// vir null se o produto não usa aquela variação.
+async function salvarVariacoesEstoque(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { variacoes } = req.body;
+
+    if (!Array.isArray(variacoes)) {
+      return res.status(400).json({ error: 'Lista de variações inválida.' });
+    }
+
+    for (const v of variacoes) {
+      const estoque = Math.max(0, parseInt(v.estoque, 10) || 0);
+      await pool.query(
+        `INSERT INTO produto_variacoes (produto_id, cor_id, tamanho_id, estoque)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE estoque = VALUES(estoque)`,
+        [id, v.cor_id || null, v.tamanho_id || null, estoque]
+      );
+    }
+
+    res.json({ message: 'Estoque salvo com sucesso.' });
   } catch (err) {
     next(err);
   }
@@ -476,4 +514,5 @@ module.exports = {
   deleteColor,
   createSize,
   deleteSize,
+  salvarVariacoesEstoque,
 };

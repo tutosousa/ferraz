@@ -250,6 +250,7 @@ function renderizarProduto(produto) {
   });
 
   ligarEventosVariacoes(produto);
+  atualizarEstoqueExibido(produto);
 
   const inputQtd = document.getElementById('input-quantidade');
   const precoEl = document.getElementById('preco-exibido');
@@ -289,13 +290,61 @@ function renderizarProduto(produto) {
       return;
     }
 
-    const qtd = Math.max(1, Number(inputQtd.value) || 1);
+    const estoqueAtual = obterEstoqueAtual(produto);
+    if (estoqueAtual <= 0) {
+      msgSelecione.textContent = 'Sem estoque para essa combinação no momento.';
+      msgSelecione.style.display = 'block';
+      setTimeout(() => (msgSelecione.style.display = 'none'), 3000);
+      return;
+    }
+
+    const qtd = Math.min(estoqueAtual, Math.max(1, Number(inputQtd.value) || 1));
     const nomeCor = corSelecionada ? (produto.cores.find((c) => c.id === corSelecionada) || {}).nome : null;
     adicionarAoCarrinho(produto, qtd, modo, { tamanho: tamanhoSelecionado, cor: nomeCor });
     const msg = document.getElementById('mensagem-adicionado');
     msg.style.display = 'block';
     setTimeout(() => (msg.style.display = 'none'), 2500);
   });
+}
+
+// Descobre o estoque disponível pra combinação de cor/tamanho escolhida
+// agora — se o produto não tiver variações configuradas (nenhuma linha em
+// produto.variacoes), cai no estoque geral do produto, como sempre foi.
+function obterEstoqueAtual(produto) {
+  if (!produto.variacoes || produto.variacoes.length === 0) {
+    return produto.estoque;
+  }
+  const tamanhoObj = tamanhoSelecionado
+    ? (produto.tamanhos || []).find((t) => t.tamanho === tamanhoSelecionado)
+    : null;
+  const tamanhoId = tamanhoObj ? tamanhoObj.id : null;
+
+  const variacao = produto.variacoes.find(
+    (v) => (v.cor_id || null) === (corSelecionada || null) && (v.tamanho_id || null) === (tamanhoId || null)
+  );
+  return variacao ? variacao.estoque : produto.estoque;
+}
+
+function atualizarEstoqueExibido(produto) {
+  const estoqueAtual = obterEstoqueAtual(produto);
+  const textoEl = document.getElementById('texto-estoque');
+  const inputQtd = document.getElementById('input-quantidade');
+  const btnAdicionar = document.getElementById('btn-adicionar');
+  if (!textoEl || !inputQtd || !btnAdicionar) return;
+
+  if (estoqueAtual <= 0) {
+    textoEl.textContent = 'Sem estoque para essa combinação no momento.';
+    textoEl.style.color = 'var(--cor-erro)';
+    inputQtd.max = 0;
+    inputQtd.value = 0;
+    btnAdicionar.disabled = true;
+  } else {
+    textoEl.textContent = `${estoqueAtual} unidades em estoque`;
+    textoEl.style.color = '';
+    inputQtd.max = estoqueAtual;
+    if (Number(inputQtd.value) > estoqueAtual || Number(inputQtd.value) < 1) inputQtd.value = 1;
+    btnAdicionar.disabled = false;
+  }
 }
 
 // Reamarra os cliques dos seletores depois de re-renderizar (evita perder
@@ -307,6 +356,7 @@ function ligarEventosVariacoes(produto) {
       renderizarGaleriaComCor(produto, corSelecionada);
       document.getElementById('area-cores').innerHTML = montarSeletorCores(produto);
       ligarEventosVariacoes(produto);
+      atualizarEstoqueExibido(produto);
     };
   });
   document.querySelectorAll('.seletor-tamanhos__pill').forEach((btn) => {
@@ -314,6 +364,7 @@ function ligarEventosVariacoes(produto) {
       tamanhoSelecionado = btn.dataset.tamanho;
       document.getElementById('area-tamanhos').innerHTML = montarSeletorTamanhos(produto);
       ligarEventosVariacoes(produto);
+      atualizarEstoqueExibido(produto);
     };
   });
 }

@@ -23,7 +23,6 @@ async function gerarUrlAutorizacao() {
   const state = crypto.randomBytes(16).toString('hex');
 
   await pool.query('INSERT INTO melhor_envio_oauth_states (state) VALUES (?)', [state]);
-  // Limpa states velhos (mais de 30 minutos), pra não acumular lixo
   await pool.query(
     'DELETE FROM melhor_envio_oauth_states WHERE criado_em < NOW() - INTERVAL 30 MINUTE'
   );
@@ -64,18 +63,11 @@ async function salvarTokens(dados) {
 // IMPORTANTE: diferente do resto da API do Melhor Envio (que usa JSON), as
 // rotas de autenticação OAuth2 (/oauth/token) esperam o corpo no formato
 // tradicional de formulário (application/x-www-form-urlencoded), não JSON
-// — a própria documentação deles avisa essa exceção.
+// — a própria documentação deles avisa essa exceção. Também mandamos as
+// credenciais no cabeçalho "Authorization: Basic" além do corpo, cobrindo
+// os dois métodos possíveis de autenticação.
 async function trocarCodigoPorToken(code) {
   const redirectUri = obterRedirectUri();
-
-  // Log de diagnóstico: mostra exatamente o que está sendo enviado (nunca
-  // o Secret completo, só os primeiros e últimos caracteres, o suficiente
-  // pra conferir sem expor a chave inteira no log).
-  console.log(
-    `📤 Enviando ao Melhor Envio: client_id="${CLIENT_ID}", ` +
-    `secret="${CLIENT_SECRET.slice(0, 4)}...${CLIENT_SECRET.slice(-4)}" (${CLIENT_SECRET.length} chars), ` +
-    `redirect_uri="${redirectUri}"`
-  );
 
   const corpo = new URLSearchParams({
     grant_type: 'authorization_code',
@@ -85,10 +77,6 @@ async function trocarCodigoPorToken(code) {
     code,
   });
 
-  // Além de mandar client_id/client_secret no corpo (jeito mais comum),
-  // também mandamos no cabeçalho "Authorization: Basic" — alguns
-  // servidores OAuth2 exigem especificamente esse método pra autenticar o
-  // aplicativo, mesmo com os dados certos no corpo.
   const credenciaisBasic = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
 
   const resposta = await fetch(TOKEN_URL, {
@@ -113,7 +101,7 @@ async function trocarCodigoPorToken(code) {
 }
 
 // Pede um token novo usando o refresh_token guardado, quando o atual
-// estiver perto de vencer. Mesma observação sobre form-urlencoded acima.
+// estiver perto de vencer.
 async function renovarToken(refreshToken) {
   const corpo = new URLSearchParams({
     grant_type: 'refresh_token',
@@ -142,9 +130,6 @@ async function renovarToken(refreshToken) {
   return dados;
 }
 
-// Retorna um access_token válido pronto pra usar — renova sozinho se
-// estiver a menos de 2 dias de vencer. Retorna null se a loja ainda não
-// tiver conectado o Melhor Envio nenhuma vez.
 async function obterTokenValido() {
   const [rows] = await pool.query(
     'SELECT access_token, refresh_token, expira_em FROM melhor_envio_conexao ORDER BY id DESC LIMIT 1'

@@ -170,6 +170,18 @@
           <button type="button" class="btn btn-secundario" id="btn-add-tamanho">+ Adicionar tamanho</button>
         </div>
 
+        <div id="secao-estoque-variacoes" style="margin-top:26px; display:none;">
+          <label>Estoque por cor e tamanho</label>
+          <p class="texto-suave" style="font-size:0.82rem; margin-bottom:10px;">
+            Preencha quantas peças você tem de cada combinação. Deixe em branco ou 0 quando não tiver aquela combinação.
+          </p>
+          <div style="overflow-x:auto;">
+            <table class="tabela-admin" id="tabela-estoque-variacoes"></table>
+          </div>
+          <button type="button" class="btn btn-primario" id="btn-salvar-estoque" style="margin-top:14px;">Salvar estoque</button>
+          <div id="alerta-estoque" style="margin-top:10px;"></div>
+        </div>
+
         <div id="fotos-gerais-secao" style="margin-top:26px; display:none;">
           <label>Outras fotos do produto (sem cor específica)</label>
           <p class="texto-suave" style="font-size:0.8rem; margin-bottom:6px;">
@@ -289,6 +301,7 @@ async function abrirModalEdicao(produtoId) {
 
     renderizarCores(produto);
     renderizarTamanhos(produto.tamanhos || []);
+    renderizarEstoqueVariacoes(produto);
   } catch (err) {
     document.getElementById('alerta-modal').innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
   }
@@ -298,6 +311,8 @@ async function recarregarProdutoNoModal() {
   const produtoId = document.getElementById('produto_id').value;
   const produto = await apiFetchAdmin(`/produtos/admin/${produtoId}`);
   renderizarCores(produto);
+  renderizarTamanhos(produto.tamanhos || []);
+  renderizarEstoqueVariacoes(produto);
   return produto;
 }
 
@@ -451,6 +466,74 @@ document.getElementById('btn-add-cor').addEventListener('click', async () => {
 
 // ---------- Tamanhos ----------
 
+let ultimoProdutoCarregado = null;
+
+function renderizarEstoqueVariacoes(produto) {
+  ultimoProdutoCarregado = produto;
+  const secao = document.getElementById('secao-estoque-variacoes');
+  const tabela = document.getElementById('tabela-estoque-variacoes');
+  const cores = produto.cores || [];
+  const tamanhos = produto.tamanhos || [];
+  const variacoes = produto.variacoes || [];
+
+  // Sem cor nem tamanho cadastrados: não faz sentido mostrar a matriz —
+  // esse produto continua usando o campo "Estoque" simples, de sempre.
+  if (cores.length === 0 && tamanhos.length === 0) {
+    secao.style.display = 'none';
+    return;
+  }
+  secao.style.display = 'block';
+
+  function estoqueDe(corId, tamanhoId) {
+    const v = variacoes.find((x) => (x.cor_id || null) === (corId || null) && (x.tamanho_id || null) === (tamanhoId || null));
+    return v ? v.estoque : 0;
+  }
+
+  // Monta a matriz: linhas = cores (ou "Todas as peças" se não tiver cor),
+  // colunas = tamanhos (ou uma coluna única "Estoque" se não tiver tamanho).
+  const linhasCores = cores.length > 0 ? cores : [{ id: null, nome: 'Todas as peças' }];
+  const colunasTamanhos = tamanhos.length > 0 ? tamanhos : [{ id: null, tamanho: 'Estoque' }];
+
+  const cabecalho = `<thead><tr><th>Cor</th>${colunasTamanhos.map((t) => `<th>${escapeHtml(t.tamanho)}</th>`).join('')}</tr></thead>`;
+  const linhas = linhasCores.map((cor) => `
+    <tr>
+      <td>${escapeHtml(cor.nome)}</td>
+      ${colunasTamanhos.map((tam) => `
+        <td>
+          <input type="number" min="0" class="input-estoque-variacao"
+                 data-cor-id="${cor.id ?? ''}" data-tamanho-id="${tam.id ?? ''}"
+                 value="${estoqueDe(cor.id, tam.id)}"
+                 style="width:70px; padding:6px; border:1.5px solid var(--cor-linha); border-radius:4px; font-family:inherit;">
+        </td>
+      `).join('')}
+    </tr>
+  `).join('');
+
+  tabela.innerHTML = cabecalho + `<tbody>${linhas}</tbody>`;
+}
+
+document.getElementById('btn-salvar-estoque').addEventListener('click', async () => {
+  const alertaEl = document.getElementById('alerta-estoque');
+  const inputs = document.querySelectorAll('.input-estoque-variacao');
+  const variacoes = Array.from(inputs).map((input) => ({
+    cor_id: input.dataset.corId || null,
+    tamanho_id: input.dataset.tamanhoId || null,
+    estoque: input.value,
+  }));
+
+  try {
+    const produtoId = document.getElementById('produto_id').value;
+    await apiFetchAdmin(`/produtos/admin/${produtoId}/variacoes`, {
+      method: 'PUT',
+      body: JSON.stringify({ variacoes }),
+    });
+    alertaEl.innerHTML = `<div class="alerta alerta-sucesso">Estoque salvo com sucesso!</div>`;
+    setTimeout(() => (alertaEl.innerHTML = ''), 2500);
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
+  }
+});
+
 function renderizarTamanhos(tamanhos) {
   const container = document.getElementById('lista-tamanhos');
   if (tamanhos.length === 0) {
@@ -471,6 +554,7 @@ function renderizarTamanhos(tamanhos) {
         await apiFetchAdmin(`/produtos/admin/${produtoId}/tamanhos/${btn.dataset.removerTamanho}`, { method: 'DELETE' });
         const produto = await apiFetchAdmin(`/produtos/admin/${produtoId}`);
         renderizarTamanhos(produto.tamanhos || []);
+        renderizarEstoqueVariacoes(produto);
       } catch (err) {
         alert(err.message);
       }
@@ -491,6 +575,7 @@ document.getElementById('btn-add-tamanho').addEventListener('click', async () =>
     document.getElementById('novo_tamanho').value = '';
     const produto = await apiFetchAdmin(`/produtos/admin/${produtoId}`);
     renderizarTamanhos(produto.tamanhos || []);
+    renderizarEstoqueVariacoes(produto);
   } catch (err) {
     alert(err.message);
   }
