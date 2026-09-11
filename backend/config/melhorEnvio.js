@@ -37,7 +37,7 @@ const CEP_ORIGEM = (process.env.MELHOR_ENVIO_CEP_ORIGEM || '').trim();
 
 // A aplicação foi cadastrada em ambiente de PRODUÇÃO do Melhor Envio (não
 // no Sandbox), então usamos sempre o domínio de produção.
-const BASE_URL = 'https://www.melhorenvio.com.br';
+const BASE_URL = 'https://melhorenvio.com.br';
 const AUTHORIZE_URL = `${BASE_URL}/oauth/authorize`;
 const TOKEN_URL = `${BASE_URL}/oauth/token`;
 const API_BASE_URL = `${BASE_URL}/api/v2`;
