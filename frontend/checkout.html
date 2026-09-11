@@ -432,10 +432,20 @@ function mostrarResultadoPagamento(resposta) {
   let extra = '';
   if (resposta.qr_code_base64) {
     extra += `
-      <div style="text-align:center; margin-top:16px;">
-        <img src="data:image/png;base64,${resposta.qr_code_base64}" alt="QR Code Pix" style="max-width:220px;">
-        <p class="texto-suave" style="font-size:0.85rem;">Escaneie o QR code no app do seu banco, ou copie o código abaixo:</p>
-        <textarea readonly style="width:100%; height:70px; font-size:0.75rem; padding:8px;">${escapeHtml(resposta.qr_code)}</textarea>
+      <div class="pix-pagamento">
+        <h3 style="text-align:center; margin-bottom:14px;">Pagamento via Pix</h3>
+        <div style="text-align:center;">
+          <img src="data:image/png;base64,${resposta.qr_code_base64}" alt="QR Code Pix" style="max-width:220px;">
+        </div>
+        <p class="texto-suave" style="font-size:0.85rem; text-align:center; margin-top:10px;">Escaneie o QR code no app do seu banco</p>
+
+        <p style="font-weight:600; font-size:0.88rem; margin:16px 0 6px;">Pix copia e cola</p>
+        <textarea id="codigo-pix-copiar" readonly style="width:100%; height:70px; font-size:0.75rem; padding:8px; border:1.5px solid var(--cor-linha); border-radius:6px;">${escapeHtml(resposta.qr_code)}</textarea>
+        <button type="button" class="btn btn-secundario btn-bloco" id="btn-copiar-pix" style="margin-top:8px;">Copiar Pix</button>
+
+        <p id="texto-aguardando" style="text-align:center; margin-top:16px; font-weight:600; color: var(--cor-primaria-escura);">
+          <span class="pix-pulso"></span> Aguardando pagamento...
+        </p>
       </div>
     `;
   }
@@ -445,14 +455,56 @@ function mostrarResultadoPagamento(resposta) {
 
   resultadoEl.innerHTML = `
     <div class="alerta" style="background:#fff8e6; color:#8a6d00; border:1px solid #f0e0a8;">
-      Pedido registrado! Estamos aguardando a confirmação do pagamento.
-      Número do pedido: <strong>${escapeHtml(numeroPedidoAtual)}</strong>
+      Pedido registrado! Número do pedido: <strong>${escapeHtml(numeroPedidoAtual)}</strong>
     </div>
     ${extra}
-    <p style="text-align:center; margin-top:20px;">
-      <a href="pedido-sucesso.html?numero=${encodeURIComponent(numeroPedidoAtual)}" class="btn btn-secundario">Ver status do meu pedido</a>
-    </p>
   `;
+
+  const btnCopiar = document.getElementById('btn-copiar-pix');
+  if (btnCopiar) {
+    btnCopiar.addEventListener('click', async () => {
+      const codigo = document.getElementById('codigo-pix-copiar').value;
+      try {
+        await navigator.clipboard.writeText(codigo);
+        btnCopiar.textContent = 'Copiado!';
+        setTimeout(() => (btnCopiar.textContent = 'Copiar Pix'), 2000);
+      } catch (err) {
+        // Navegadores mais antigos / sem permissão de clipboard: seleciona o
+        // texto pra pessoa copiar manualmente com Ctrl+C.
+        const campo = document.getElementById('codigo-pix-copiar');
+        campo.select();
+        document.execCommand('copy');
+        btnCopiar.textContent = 'Copiado!';
+        setTimeout(() => (btnCopiar.textContent = 'Copiar Pix'), 2000);
+      }
+    });
+  }
+
+  // Fica checando sozinho, sem a pessoa precisar apertar F5, se o
+  // pagamento já foi confirmado (o webhook do Mercado Pago atualiza o
+  // status no banco assim que o Pix compensa — aqui só ficamos de olho
+  // nisso e levamos pra tela de sucesso automaticamente).
+  if (resposta.status === 'pending' || resposta.status === 'in_process') {
+    iniciarVerificacaoAutomatica();
+  }
+}
+
+function iniciarVerificacaoAutomatica() {
+  const intervalo = setInterval(async () => {
+    try {
+      const pedido = await apiFetch(`/pedidos/numero/${encodeURIComponent(numeroPedidoAtual)}`);
+      if (pedido.status === 'pago') {
+        clearInterval(intervalo);
+        window.location.href = `pedido-sucesso.html?numero=${encodeURIComponent(numeroPedidoAtual)}`;
+      } else if (pedido.status === 'cancelado') {
+        clearInterval(intervalo);
+        const resultadoEl = document.getElementById('resultado-pagamento');
+        resultadoEl.innerHTML = `<div class="alerta alerta-erro">Pagamento não foi aprovado. Tente novamente ou escolha outra forma de pagamento.</div>`;
+      }
+    } catch (err) {
+      // Falha de rede pontual não deve travar a verificação — tenta de novo no próximo ciclo.
+    }
+  }, 4000);
 }
 
 preencherComPerfilLogado();

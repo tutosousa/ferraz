@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { MP_ATIVO } = require('./paymentController');
 const { obterOpcoesFrete } = require('../services/shipping');
+const { enviarEmailNovoPedidoEmpresa, enviarEmailConfirmacaoCliente } = require('../services/pedidoEmails');
 
 function gerarNumeroPedido() {
   const timestamp = Date.now().toString().slice(-8);
@@ -294,6 +295,33 @@ async function createOrder(req, res, next) {
     }
 
     await connection.commit();
+
+    // Dispara os e-mails DEPOIS de confirmar que o pedido foi salvo de
+    // verdade no banco (nunca antes do commit). Roda em segundo plano —
+    // não esperamos o e-mail terminar de enviar pra responder o cliente
+    // (isso deixaria o checkout mais lento à toa), e uma falha no envio
+    // não pode derrubar o pedido que o cliente já confirmou.
+    const statusFinal = MP_ATIVO ? 'pendente' : 'pago';
+    const pedidoParaEmail = {
+      numero_pedido: numeroPedido,
+      cliente_nome,
+      cliente_email,
+      cliente_telefone,
+      subtotal,
+      frete,
+      total,
+      forma_pagamento: forma_pagamento || 'mercado_pago',
+      status: statusFinal,
+      endereco_rua,
+      endereco_numero,
+      endereco_bairro,
+      endereco_cidade,
+      endereco_estado,
+      endereco_cep,
+      criado_em: new Date(),
+    };
+    enviarEmailNovoPedidoEmpresa(pedidoParaEmail, itensProcessados).catch(() => {});
+    enviarEmailConfirmacaoCliente(pedidoParaEmail, itensProcessados).catch(() => {});
 
     res.status(201).json({
       message: MP_ATIVO

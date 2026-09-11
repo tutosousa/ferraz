@@ -560,6 +560,26 @@ textarea:focus-visible {
 .opcao-frete__prazo { font-size: 0.82rem; color: var(--cor-texto-suave); }
 .opcao-frete__preco { font-weight: 700; font-size: 1rem; white-space: nowrap; }
 
+.pix-pagamento {
+  border: 1.5px solid var(--cor-linha);
+  border-radius: var(--raio);
+  padding: 20px;
+  margin-top: 16px;
+}
+.pix-pulso {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cor-primaria);
+  animation: pix-pulsar 1.2s ease-in-out infinite;
+  margin-right: 4px;
+}
+@keyframes pix-pulsar {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
 .quantidade-seletor {
   display: flex;
   align-items: center;

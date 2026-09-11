@@ -115,6 +115,29 @@ async function enviarViaSmtp(destinatario, assunto, corpo) {
   return info;
 }
 
+// Função genérica de envio — usada tanto pro código de verificação quanto
+// pelos e-mails de pedido (novo pedido pra empresa, confirmação pro cliente).
+async function enviarEmailGenerico(destinatario, assunto, corpo) {
+  if (!EMAIL_ATIVO) {
+    console.log(`\n📧 [MODO SIMULADO] E-mail para ${destinatario}: ${assunto}\n`);
+    return { simulado: true };
+  }
+
+  try {
+    if (BREVO_ATIVO) {
+      const resultado = await enviarViaBrevoAPI(destinatario, assunto, corpo);
+      console.log(`\n✅ E-mail "${assunto}" enviado via API do Brevo para ${destinatario} (id: ${resultado.messageId})\n`);
+    } else {
+      const info = await enviarViaSmtp(destinatario, assunto, corpo);
+      console.log(`\n✅ E-mail "${assunto}" enviado via SMTP para ${destinatario} (id: ${info.messageId})\n`);
+    }
+    return { simulado: false };
+  } catch (err) {
+    console.error(`\n❌ Falha ao enviar e-mail "${assunto}" para ${destinatario}: ${err.message}\n`);
+    throw err;
+  }
+}
+
 async function enviarEmailCodigo(destinatario, codigo, tipo) {
   const assunto = tipo === 'cadastro'
     ? 'Confirme seu cadastro na FERRAZ'
@@ -124,26 +147,7 @@ async function enviarEmailCodigo(destinatario, codigo, tipo) {
     ? `Seu código de confirmação de cadastro é: ${codigo}\n\nEle expira em 10 minutos.`
     : `Seu código de acesso é: ${codigo}\n\nEle expira em 10 minutos. Se não foi você tentando entrar, ignore este e-mail.`;
 
-  if (!EMAIL_ATIVO) {
-    // Modo simulado: apenas registra no log do servidor.
-    console.log(`\n📧 [MODO SIMULADO] E-mail para ${destinatario}: ${assunto}`);
-    console.log(`   Código: ${codigo}\n`);
-    return { simulado: true };
-  }
-
-  try {
-    if (BREVO_ATIVO) {
-      const resultado = await enviarViaBrevoAPI(destinatario, assunto, corpo);
-      console.log(`\n✅ E-mail enviado via API do Brevo para ${destinatario} (id: ${resultado.messageId})\n`);
-    } else {
-      const info = await enviarViaSmtp(destinatario, assunto, corpo);
-      console.log(`\n✅ E-mail enviado via SMTP para ${destinatario} (id: ${info.messageId})\n`);
-    }
-    return { simulado: false };
-  } catch (err) {
-    console.error(`\n❌ Falha ao enviar e-mail para ${destinatario}: ${err.message}\n`);
-    throw err;
-  }
+  return enviarEmailGenerico(destinatario, assunto, corpo);
 }
 
-module.exports = { enviarEmailCodigo, testarConexaoEmail, EMAIL_ATIVO };
+module.exports = { enviarEmailCodigo, enviarEmailGenerico, testarConexaoEmail, EMAIL_ATIVO };
