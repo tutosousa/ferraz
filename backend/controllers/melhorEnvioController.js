@@ -48,11 +48,17 @@ async function callback(req, res) {
   const { code, state, error } = req.query;
 
   if (error) {
+    console.error(`Melhor Envio retornou erro direto no callback: ${error}`);
     return res.redirect(urlPainelFrete(`?erro=${encodeURIComponent(error)}`));
   }
 
   const stateValido = state && (await validarState(state));
   if (!code || !stateValido) {
+    console.error(
+      `Callback do Melhor Envio com estado inválido — code presente: ${Boolean(code)}, ` +
+      `state presente: ${Boolean(state)}, state válido no banco: ${stateValido}, ` +
+      `state recebido (preview): ${state ? state.slice(0, 8) + '...' : 'nenhum'}`
+    );
     return res.redirect(urlPainelFrete('?erro=estado_invalido'));
   }
 
