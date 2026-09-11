@@ -69,6 +69,14 @@ app.use('/api/financeiro', financeRoutes);
 app.use('/api/pagamentos', paymentRoutes);
 app.use('/api/frete', melhorEnvioRoutes);
 
+
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', service: 'FERRAZ E-commerce API' });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', service: 'FERRAZ E-commerce API' });
+});
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'FERRAZ E-commerce API' });
 });
