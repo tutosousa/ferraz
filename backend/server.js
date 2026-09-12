@@ -69,6 +69,14 @@ app.use('/api/financeiro', financeRoutes);
 app.use('/api/pagamentos', paymentRoutes);
 app.use('/api/frete', melhorEnvioRoutes);
 
+// Algumas integrações (como o Melhor Envio) testam se o "Site da
+// plataforma" cadastrado responde de verdade, batendo direto na raiz do
+// domínio — sem essa rota, isso dava 404 e podia atrapalhar a validação
+// do aplicativo do lado deles.
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', service: 'FERRAZ E-commerce API' });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'FERRAZ E-commerce API' });
 });

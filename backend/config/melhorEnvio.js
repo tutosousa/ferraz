@@ -37,7 +37,12 @@ const CEP_ORIGEM = (process.env.MELHOR_ENVIO_CEP_ORIGEM || '').trim();
 
 // A aplicação foi cadastrada em ambiente de PRODUÇÃO do Melhor Envio (não
 // no Sandbox), então usamos sempre o domínio de produção.
-const BASE_URL = 'https://www.melhorenvio.com.br';
+// IMPORTANTE: o domínio correto é "melhorenvio.com.br" — SEM "www." na
+// frente. O próprio suporte do Melhor Envio confirmou isso (mandaram um
+// link de exemplo funcionando exatamente sem o www.), e é bem provável
+// que o sistema deles trate os dois domínios como coisas diferentes,
+// causando a falha de autenticação mesmo com tudo mais certo.
+const BASE_URL = 'https://melhorenvio.com.br';
 const AUTHORIZE_URL = `${BASE_URL}/oauth/authorize`;
 const TOKEN_URL = `${BASE_URL}/oauth/token`;
 const API_BASE_URL = `${BASE_URL}/api/v2`;

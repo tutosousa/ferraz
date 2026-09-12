@@ -19,8 +19,13 @@ const {
 // servidor reinicie ou "durma" (comum em planos gratuitos como o Render)
 // entre o clique em "Conectar" e a volta autorizada do Melhor Envio.
 
-async function gerarUrlAutorizacao() {
-  const state = crypto.randomBytes(16).toString('hex');
+async function gerarUrlAutorizacao(modoDiagnostico = false) {
+  // No modo diagnóstico, prefixamos o "state" com "DIAG_" — isso deixa
+  // marcado, só pra essa tentativa específica, que o callback deve MOSTRAR
+  // o código na tela em vez de processar automaticamente. Serve pra dar
+  // pro suporte do Melhor Envio um código fresco (nunca usado) pra eles
+  // testarem a troca por token do lado deles.
+  const state = (modoDiagnostico ? 'DIAG_' : '') + crypto.randomBytes(16).toString('hex');
 
   await pool.query('INSERT INTO melhor_envio_oauth_states (state) VALUES (?)', [state]);
   await pool.query(
@@ -60,34 +65,30 @@ async function salvarTokens(dados) {
 
 // Troca o "código" recebido no callback por um token de acesso de verdade.
 //
-// IMPORTANTE: diferente do resto da API do Melhor Envio (que usa JSON), as
-// rotas de autenticação OAuth2 (/oauth/token) esperam o corpo no formato
-// tradicional de formulário (application/x-www-form-urlencoded), não JSON
-// — a própria documentação deles avisa essa exceção. Também mandamos as
-// credenciais no cabeçalho "Authorization: Basic" além do corpo, cobrindo
-// os dois métodos possíveis de autenticação.
+// IMPORTANTE: o suporte do Melhor Envio confirmou, com um exemplo de
+// chamada funcionando de verdade, que essa rota espera o corpo no formato
+// "multipart/form-data" (não "application/x-www-form-urlencoded" como a
+// gente vinha usando, nem JSON). Por isso usamos FormData de verdade aqui
+// — e é importante NÃO definir o cabeçalho Content-Type manualmente nesse
+// caso: o fetch calcula sozinho o "boundary" correto do multipart, e
+// definir um Content-Type fixo aqui quebraria esse cálculo automático.
 async function trocarCodigoPorToken(code) {
   const redirectUri = obterRedirectUri();
 
-  const corpo = new URLSearchParams({
-    grant_type: 'authorization_code',
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    redirect_uri: redirectUri,
-    code,
-  });
-
-  const credenciaisBasic = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+  const corpo = new FormData();
+  corpo.append('grant_type', 'authorization_code');
+  corpo.append('client_id', CLIENT_ID);
+  corpo.append('client_secret', CLIENT_SECRET);
+  corpo.append('redirect_uri', redirectUri);
+  corpo.append('code', code);
 
   const resposta = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Basic ${credenciaisBasic}`,
       'User-Agent': 'FERRAZ E-commerce (ferrazcollection@icloud.com)',
     },
-    body: corpo.toString(),
+    body: corpo,
   });
 
   if (!resposta.ok) {
@@ -101,23 +102,21 @@ async function trocarCodigoPorToken(code) {
 }
 
 // Pede um token novo usando o refresh_token guardado, quando o atual
-// estiver perto de vencer.
+// estiver perto de vencer. Mesmo formato multipart/form-data do acima.
 async function renovarToken(refreshToken) {
-  const corpo = new URLSearchParams({
-    grant_type: 'refresh_token',
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    refresh_token: refreshToken,
-  });
+  const corpo = new FormData();
+  corpo.append('grant_type', 'refresh_token');
+  corpo.append('client_id', CLIENT_ID);
+  corpo.append('client_secret', CLIENT_SECRET);
+  corpo.append('refresh_token', refreshToken);
 
   const resposta = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/x-www-form-urlencoded',
       'User-Agent': 'FERRAZ E-commerce (ferrazcollection@icloud.com)',
     },
-    body: corpo.toString(),
+    body: corpo,
   });
 
   if (!resposta.ok) {
