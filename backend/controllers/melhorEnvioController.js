@@ -56,9 +56,12 @@ async function callback(req, res) {
   const stateValido = state && (await validarState(state));
   const ehDiagnostico = Boolean(state) && state.startsWith('DIAG_');
   if (!code || !stateValido) {
+<<<<<<< HEAD
     // Diagnóstico: mostra exatamente qual das duas partes falhou, sem
     // expor o "code"/"state" inteiros no log (só um pedacinho, o
     // suficiente pra conferir sem virar um segredo exposto).
+=======
+>>>>>>> d7f2e395ac06c5a404a5975544b587b9ee7d5afa
     console.error(
       `Callback do Melhor Envio com estado inválido — code presente: ${Boolean(code)}, ` +
       `state presente: ${Boolean(state)}, state válido no banco: ${stateValido}, ` +
