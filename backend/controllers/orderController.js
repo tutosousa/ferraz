@@ -321,7 +321,16 @@ async function createOrder(req, res, next) {
       criado_em: new Date(),
     };
     enviarEmailNovoPedidoEmpresa(pedidoParaEmail, itensProcessados).catch(() => {});
-    enviarEmailConfirmacaoCliente(pedidoParaEmail, itensProcessados).catch(() => {});
+
+    // O e-mail de confirmação pro CLIENTE só sai aqui se o pedido já
+    // nasceu pago (modo simulado, sem Mercado Pago configurado). Quando
+    // tem gateway de verdade, o pedido nasce "pendente" e esse e-mail só
+    // dispara mais tarde, quando o pagamento for realmente confirmado
+    // (em paymentController.js — tanto na aprovação na hora quanto na
+    // confirmação posterior via webhook, como costuma acontecer com Pix).
+    if (statusFinal === 'pago') {
+      enviarEmailConfirmacaoCliente(pedidoParaEmail, itensProcessados).catch(() => {});
+    }
 
     res.status(201).json({
       message: MP_ATIVO

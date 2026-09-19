@@ -113,8 +113,8 @@
 
           <div style="overflow-x:auto;">
             <table class="tabela-admin">
-              <thead><tr><th>Nº do pedido</th><th>Data</th><th>Tipo</th><th>Total</th><th>Status</th></tr></thead>
-              <tbody id="tabela-meus-pedidos"><tr><td colspan="5">Carregando...</td></tr></tbody>
+              <thead><tr><th>Nº do pedido</th><th>Data</th><th>Tipo</th><th>Total</th><th>Status</th><th>Ação</th></tr></thead>
+              <tbody id="tabela-meus-pedidos"><tr><td colspan="6">Carregando...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -270,7 +270,7 @@ function renderizarTabelaPedidos() {
       entregue: 'Nenhum pedido entregue ainda.',
       cancelado: 'Nenhum pedido cancelado.',
     };
-    tbody.innerHTML = `<tr><td colspan="5">${mensagens[subAbaAtiva]}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6">${mensagens[subAbaAtiva]}</td></tr>`;
     return;
   }
 
@@ -281,6 +281,12 @@ function renderizarTabelaPedidos() {
       <td>${p.tipo_pedido === 'atacado' ? 'Atacado' : 'Varejo'}</td>
       <td>${formatarPreco(p.total)}</td>
       <td><span class="badge badge-${p.status}">${escapeHtml(p.status)}</span></td>
+      <td>
+        ${p.status === 'pendente'
+          ? `<a href="pedido-sucesso.html?numero=${encodeURIComponent(p.numero_pedido)}" class="btn btn-primario" style="padding:8px 16px; font-size:0.85rem;">Pagar agora</a>`
+          : ''
+        }
+      </td>
     </tr>
   `).join('');
 }
@@ -294,7 +300,7 @@ async function carregarMeusPedidos() {
     todosOsPedidosCache = await apiFetchCliente('/clientes/meus-pedidos');
     renderizarTabelaPedidos();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 

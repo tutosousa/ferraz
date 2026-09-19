@@ -21,6 +21,21 @@
 const { Preference, Payment } = require('mercadopago');
 const { mpClient, MP_ATIVO, MP_PUBLIC_KEY } = require('../config/mercadopago');
 const { pool } = require('../config/db');
+const { enviarEmailConfirmacaoCliente } = require('../services/pedidoEmails');
+
+// Manda o e-mail de confirmação pro cliente quando o pagamento é
+// confirmado de verdade — busca o pedido completo (com itens) pra montar
+// o e-mail, e nunca derruba o fluxo principal se o envio falhar.
+async function enviarEmailConfirmacaoSeAplicavel(numeroPedido) {
+  try {
+    const [pedidos] = await pool.query('SELECT * FROM pedidos WHERE numero_pedido = ?', [numeroPedido]);
+    if (pedidos.length === 0) return;
+    const [itens] = await pool.query('SELECT * FROM pedido_itens WHERE pedido_id = ?', [pedidos[0].id]);
+    await enviarEmailConfirmacaoCliente(pedidos[0], itens);
+  } catch (err) {
+    console.error('Falha ao enviar e-mail de confirmação de pagamento:', err.message);
+  }
+}
 
 // Devolve pro frontend a chave pública e se o gateway está ativo — isso
 // não é segredo, a Public Key é feita pra ser usada no navegador.
@@ -86,6 +101,13 @@ async function processarPagamento(req, res, next) {
       String(resultado.id),
       pedido.id,
     ]);
+
+    // Chegou até aqui sabendo que o pedido estava "pendente" (checamos lá
+    // em cima) — se agora virou "pago", é uma confirmação de verdade,
+    // então dispara o e-mail pro cliente (sem esperar terminar de enviar).
+    if (novoStatus === 'pago') {
+      enviarEmailConfirmacaoSeAplicavel(pedido.numero_pedido).catch(() => {});
+    }
 
     res.json({
       status: resultado.status, // approved | in_process | pending | rejected
@@ -169,6 +191,15 @@ async function receberWebhook(req, res) {
     const numeroPedido = pagamento.external_reference;
     if (!numeroPedido) return res.sendStatus(200);
 
+    // Busca o status ATUAL antes de atualizar — importante pra não
+    // disparar o e-mail de confirmação de novo se esse pedido já tinha
+    // sido marcado como pago antes (o Mercado Pago pode chamar esse
+    // webhook mais de uma vez pro mesmo pagamento).
+    const [pedidoAtual] = await pool.query('SELECT status FROM pedidos WHERE numero_pedido = ?', [
+      numeroPedido,
+    ]);
+    const statusAnterior = pedidoAtual[0]?.status;
+
     let novoStatus = null;
     if (pagamento.status === 'approved') novoStatus = 'pago';
     else if (pagamento.status === 'rejected') novoStatus = 'cancelado';
@@ -178,6 +209,13 @@ async function receberWebhook(req, res) {
         'UPDATE pedidos SET status = ?, mp_payment_id = ? WHERE numero_pedido = ?',
         [novoStatus, String(paymentId), numeroPedido]
       );
+
+      // Só é uma confirmação DE VERDADE se o status mudou agora — se já
+      // estava "pago" antes (processarPagamento já tinha confirmado na
+      // hora, por exemplo), não manda o e-mail de novo.
+      if (novoStatus === 'pago' && statusAnterior !== 'pago') {
+        enviarEmailConfirmacaoSeAplicavel(numeroPedido).catch(() => {});
+      }
     } else {
       await pool.query('UPDATE pedidos SET mp_payment_id = ? WHERE numero_pedido = ?', [
         String(paymentId),

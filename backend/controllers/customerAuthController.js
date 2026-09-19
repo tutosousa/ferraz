@@ -14,10 +14,14 @@ function gerarCodigo() {
 }
 
 function gerarToken(cliente) {
+  // Sessão do cliente dura bem mais tempo que a do admin (30 dias, o
+  // padrão de "continuar logado" que qualquer loja usa) — a etapa de
+  // 2FA continua acontecendo normalmente no login, isso só evita a
+  // pessoa precisar refazer login toda vez que fechar o navegador.
   return jwt.sign(
     { id: cliente.id, email: cliente.email, nome: cliente.nome, tipo: 'cliente' },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+    { expiresIn: process.env.CUSTOMER_JWT_EXPIRES_IN || '30d' }
   );
 }
 
