@@ -1,0 +1,88 @@
+// Configuração da integração com o Melhor Envio — cálculo de frete real
+// (Correios, Jadlog e outras transportadoras, tudo em uma única consulta).
+//
+// O Melhor Envio exige login OAuth2 (parecido com "Entrar com Google"),
+// não é mais um token fixo simples. O fluxo é:
+//   1. O admin clica em "Conectar com Melhor Envio" no painel.
+//   2. É redirecionado pro Melhor Envio, loga e autoriza o app da loja.
+//   3. O Melhor Envio manda o navegador de volta pro nosso backend com um
+//      "código" — trocamos esse código por um token de acesso (válido por
+//      30 dias) e um token de renovação (válido por 45 dias).
+//   4. Guardamos os dois no banco de dados, e o sistema renova sozinho
+//      quando o token estiver perto de vencer.
+//
+// Pra isso funcionar, o DONO DA LOJA precisa:
+//   1. Criar uma conta em https://www.melhorenvio.com.br
+//   2. Ir em "Integrações" → "Área Dev." → "Cadastrar aplicativo"
+//   3. Preencher o formulário (a URL de callback deve ser
+//      SEU_BACKEND/api/frete/melhor-envio/callback)
+//   4. Copiar o Client ID e o Secret gerados
+//   5. Preencher no .env do backend:
+//        MELHOR_ENVIO_CLIENT_ID=o_client_id
+//        MELHOR_ENVIO_CLIENT_SECRET=o_secret
+//        MELHOR_ENVIO_CEP_ORIGEM=00000000 (CEP de onde a loja despacha)
+//   6. Reiniciar o backend, entrar no painel admin, aba "Frete", e clicar
+//      em "Conectar com Melhor Envio" pra autorizar de fato.
+//
+// Enquanto isso não for feito, o site roda em MODO SIMULADO: frete grátis
+// (o padrão atual da loja), sem cálculo nenhum.
+
+// .trim() é uma proteção extra: é comum, ao copiar uma chave longa de uma
+// página, vir junto um espaço ou quebra de linha invisível no início/fim
+// sem a pessoa perceber — o que faz o Melhor Envio recusar a credencial
+// por não bater 100% igual, mesmo "parecendo" certa visualmente.
+const CLIENT_ID = (process.env.MELHOR_ENVIO_CLIENT_ID || '').trim();
+const CLIENT_SECRET = (process.env.MELHOR_ENVIO_CLIENT_SECRET || '').trim();
+const CEP_ORIGEM = (process.env.MELHOR_ENVIO_CEP_ORIGEM || '').trim();
+
+// A aplicação foi cadastrada em ambiente de PRODUÇÃO do Melhor Envio (não
+// no Sandbox), então usamos sempre o domínio de produção.
+// IMPORTANTE: o domínio correto é "melhorenvio.com.br" — SEM "www." na
+// frente. O próprio suporte do Melhor Envio confirmou isso (mandaram um
+// link de exemplo funcionando exatamente sem o www.), e é bem provável
+// que o sistema deles trate os dois domínios como coisas diferentes,
+// causando a falha de autenticação mesmo com tudo mais certo.
+const BASE_URL = 'https://melhorenvio.com.br';
+const AUTHORIZE_URL = `${BASE_URL}/oauth/authorize`;
+const TOKEN_URL = `${BASE_URL}/oauth/token`;
+const API_BASE_URL = `${BASE_URL}/api/v2`;
+
+const SCOPES = [
+  'shipping-calculate',
+  'shipping-companies',
+  'cart-read',
+  'cart-write',
+  'shipping-checkout',
+  'shipping-generate',
+  'shipping-preview',
+  'shipping-print',
+  'ecommerce-shipping',
+].join(' ');
+
+function obterRedirectUri() {
+  const backendUrl = (process.env.BACKEND_URL || '').trim();
+  if (!backendUrl) return null;
+  // Remove barra(s) no final do BACKEND_URL, se houver — sem isso, um
+  // BACKEND_URL salvo como "https://site.com/" (com barra) geraria um
+  // endereço de callback com barra DUPLA ("...com//api/..."), que não bate
+  // com o que está cadastrado no Melhor Envio, causando falha silenciosa.
+  const backendUrlLimpo = backendUrl.replace(/\/+$/, '');
+  return `${backendUrlLimpo}/api/frete/melhor-envio/callback`;
+}
+
+const MELHOR_ENVIO_CONFIGURADO = Boolean(
+  CLIENT_ID && CLIENT_SECRET && CEP_ORIGEM && obterRedirectUri()
+);
+
+module.exports = {
+  CLIENT_ID,
+  CLIENT_SECRET,
+  CEP_ORIGEM,
+  BASE_URL,
+  AUTHORIZE_URL,
+  TOKEN_URL,
+  API_BASE_URL,
+  SCOPES,
+  obterRedirectUri,
+  MELHOR_ENVIO_CONFIGURADO,
+};
