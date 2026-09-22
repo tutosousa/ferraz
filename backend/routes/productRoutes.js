@@ -18,6 +18,7 @@ const {
   createSize,
   deleteSize,
   salvarVariacoesEstoque,
+  definirFotoPrincipal,
 } = require('../controllers/productController');
 
 // Pública (loja)
@@ -46,5 +47,8 @@ router.delete('/admin/:id/tamanhos/:tamanhoId', requireAdminAuth, deleteSize);
 
 // Estoque por combinação cor+tamanho
 router.put('/admin/:id/variacoes', requireAdminAuth, salvarVariacoesEstoque);
+
+// Foto principal
+router.put('/admin/:id/foto-principal', requireAdminAuth, definirFotoPrincipal);
 
 module.exports = router;

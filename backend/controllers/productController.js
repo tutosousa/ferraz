@@ -499,6 +499,29 @@ async function deleteSize(req, res, next) {
   }
 }
 
+// Troca a foto principal do produto pra uma foto já existente na galeria
+// (geral, sem cor) — a antiga simplesmente deixa de ser a principal, sem
+// apagar nada, ela só passa a ser tratada como uma foto adicional comum.
+async function definirFotoPrincipal(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { imagem_id } = req.body;
+
+    const [imagens] = await pool.query(
+      'SELECT imagem_url FROM produto_imagens WHERE id = ? AND produto_id = ? AND cor_id IS NULL',
+      [imagem_id, id]
+    );
+    if (imagens.length === 0) {
+      return res.status(404).json({ error: 'Foto não encontrada entre as fotos gerais deste produto.' });
+    }
+
+    await pool.query('UPDATE produtos SET imagem_url = ? WHERE id = ?', [imagens[0].imagem_url, id]);
+    res.json({ message: 'Foto principal atualizada com sucesso.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   listPublicProducts,
   getPublicProduct,
@@ -515,4 +538,5 @@ module.exports = {
   createSize,
   deleteSize,
   salvarVariacoesEstoque,
+  definirFotoPrincipal,
 };

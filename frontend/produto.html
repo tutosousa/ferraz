@@ -220,7 +220,6 @@ function renderizarProduto(produto) {
       <div>
         <span class="produto-card__categoria">${escapeHtml(produto.categoria)}</span>
         <h1>${escapeHtml(produto.nome)}</h1>
-        <p class="texto-suave">${escapeHtml(produto.descricao || '')}</p>
         <div class="preco-destaque" id="preco-exibido">${formatarPreco(precoInicial)}</div>
         ${montarAvisoAtacado(produto)}
 
@@ -241,6 +240,8 @@ function renderizarProduto(produto) {
           Produto adicionado ao carrinho!
         </p>
         <p id="mensagem-selecione" class="alerta alerta-erro" style="display:none; margin-top:16px;"></p>
+
+        <p class="texto-suave" style="margin-top:24px; padding-top:20px; border-top:1px solid var(--cor-linha);">${escapeHtml(produto.descricao || '')}</p>
       </div>
     </div>
   `;

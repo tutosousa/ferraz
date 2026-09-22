@@ -323,7 +323,6 @@ function renderizarCores(produto) {
   const imagens = produto.imagens || [];
   const container = document.getElementById('cards-cores');
   const fotosGeraisSecao = document.getElementById('fotos-gerais-secao');
-  const fotosGeraisLista = document.getElementById('fotos-gerais-lista');
 
   if (cores.length === 0) {
     container.innerHTML = `<p class="texto-suave" style="font-size:0.85rem;">Nenhuma cor cadastrada ainda — adicione a primeira cor abaixo.</p>`;
@@ -408,34 +407,82 @@ function renderizarCores(produto) {
     });
   }
 
-  // Fotos que não pertencem a nenhuma cor (ex: a foto principal/capa do
-  // produto) continuam listadas à parte, com botão simples de remover.
+  // Fotos que não pertencem a nenhuma cor. A que bate com produto.imagem_url
+  // é A foto principal (só existe uma) — separamos ela visualmente das
+  // demais, que ficam como "fotos adicionais". Sem essa separação, todas
+  // pareciam "principal" igualmente, o que confundia bastante no admin.
   const fotosGerais = imagens.filter((img) => !img.cor_id);
+  const fotoPrincipal = fotosGerais.find((img) => img.imagem_url === produto.imagem_url) || null;
+  const fotosAdicionais = fotosGerais.filter((img) => img !== fotoPrincipal);
+
   if (fotosGerais.length === 0) {
     fotosGeraisSecao.style.display = 'none';
   } else {
     fotosGeraisSecao.style.display = 'block';
-    fotosGeraisLista.innerHTML = fotosGerais.map((img) => `
-      <div class="galeria-admin-item">
-        <img src="${BACKEND_ORIGIN}${img.imagem_url}" alt="Foto do produto">
-        <button type="button" class="galeria-admin-item__remover" data-imagem-id="${img.id}" title="Remover esta foto">✕</button>
-      </div>
-    `).join('');
 
-    fotosGeraisLista.querySelectorAll('.galeria-admin-item__remover').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Remover esta foto do produto?')) return;
-        try {
-          const produtoId = document.getElementById('produto_id').value;
-          await apiFetchAdmin(`/produtos/admin/${produtoId}/imagens/${btn.dataset.imagemId}`, {
-            method: 'DELETE',
-          });
-          await recarregarProdutoNoModal();
-        } catch (err) {
-          alert(err.message);
-        }
+    const htmlPrincipal = fotoPrincipal ? `
+      <p style="font-weight:600; font-size:0.85rem; margin-bottom:6px;">Foto principal</p>
+      <div class="galeria-admin-item" style="max-width:160px; border:2px solid var(--cor-primaria);">
+        <img src="${BACKEND_ORIGIN}${fotoPrincipal.imagem_url}" alt="Foto principal do produto">
+        <span class="badge-foto-principal" style="display:block; text-align:center; background:var(--cor-primaria); color:#fff; font-size:0.72rem; font-weight:700; padding:3px;">PRINCIPAL</span>
+      </div>
+    ` : '';
+
+    const htmlAdicionais = fotosAdicionais.length > 0 ? `
+      <p style="font-weight:600; font-size:0.85rem; margin:14px 0 6px;">Fotos adicionais (sem cor específica)</p>
+      <div id="fotos-gerais-lista"></div>
+    ` : '';
+
+    fotosGeraisSecao.innerHTML = `
+      <label>Fotos gerais do produto</label>
+      <p class="texto-suave" style="font-size:0.8rem; margin-bottom:6px;">
+        A foto principal é a capa do produto na loja. As demais aparecem quando nenhuma cor está selecionada.
+      </p>
+      ${htmlPrincipal}
+      ${htmlAdicionais}
+    `;
+
+    const listaAdicionaisEl = document.getElementById('fotos-gerais-lista');
+    if (listaAdicionaisEl) {
+      listaAdicionaisEl.className = 'galeria-admin-lista';
+      listaAdicionaisEl.innerHTML = fotosAdicionais.map((img) => `
+        <div class="galeria-admin-item">
+          <img src="${BACKEND_ORIGIN}${img.imagem_url}" alt="Foto do produto">
+          <button type="button" class="galeria-admin-item__remover" data-imagem-id="${img.id}" title="Remover esta foto">✕</button>
+          <button type="button" class="link-acao" data-tornar-principal="${img.id}" style="display:block; width:100%; text-align:center; font-size:0.75rem; padding:4px;">Tornar principal</button>
+        </div>
+      `).join('');
+
+      listaAdicionaisEl.querySelectorAll('.galeria-admin-item__remover').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Remover esta foto do produto?')) return;
+          try {
+            const produtoId = document.getElementById('produto_id').value;
+            await apiFetchAdmin(`/produtos/admin/${produtoId}/imagens/${btn.dataset.imagemId}`, {
+              method: 'DELETE',
+            });
+            await recarregarProdutoNoModal();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
       });
-    });
+
+      listaAdicionaisEl.querySelectorAll('[data-tornar-principal]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            const produtoId = document.getElementById('produto_id').value;
+            await apiFetchAdmin(`/produtos/admin/${produtoId}/foto-principal`, {
+              method: 'PUT',
+              body: JSON.stringify({ imagem_id: btn.dataset.tornarPrincipal }),
+            });
+            await recarregarProdutoNoModal();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+    }
   }
 }
 
