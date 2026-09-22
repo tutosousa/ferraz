@@ -68,7 +68,12 @@ async function carregarStatus() {
       return;
     }
 
-    if (status.conectado) {
+    if (status.viaTokenDireto) {
+      statusEl.innerHTML = `
+        <p style="color: var(--cor-sucesso); font-weight:600;">✅ Conectado ao Melhor Envio (Token de Acesso Direto)</p>
+        <p class="texto-suave">Configurado direto pela variável de ambiente — não precisa clicar em nada aqui, já está funcionando.</p>
+      `;
+    } else if (status.conectado) {
       const dataExpiracao = new Date(status.expira_em).toLocaleDateString('pt-BR');
       statusEl.innerHTML = `
         <p style="color: var(--cor-sucesso); font-weight:600;">✅ Conectado ao Melhor Envio</p>

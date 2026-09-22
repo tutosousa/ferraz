@@ -1,36 +1,33 @@
 // Configuração da integração com o Melhor Envio — cálculo de frete real
 // (Correios, Jadlog e outras transportadoras, tudo em uma única consulta).
 //
-// O Melhor Envio exige login OAuth2 (parecido com "Entrar com Google"),
-// não é mais um token fixo simples. O fluxo é:
-//   1. O admin clica em "Conectar com Melhor Envio" no painel.
-//   2. É redirecionado pro Melhor Envio, loga e autoriza o app da loja.
-//   3. O Melhor Envio manda o navegador de volta pro nosso backend com um
-//      "código" — trocamos esse código por um token de acesso (válido por
-//      30 dias) e um token de renovação (válido por 45 dias).
-//   4. Guardamos os dois no banco de dados, e o sistema renova sozinho
-//      quando o token estiver perto de vencer.
+// EXISTEM DUAS FORMAS DE AUTENTICAR, E O SISTEMA ACEITA AS DUAS:
 //
-// Pra isso funcionar, o DONO DA LOJA precisa:
-//   1. Criar uma conta em https://www.melhorenvio.com.br
-//   2. Ir em "Integrações" → "Área Dev." → "Cadastrar aplicativo"
-//   3. Preencher o formulário (a URL de callback deve ser
-//      SEU_BACKEND/api/frete/melhor-envio/callback)
-//   4. Copiar o Client ID e o Secret gerados
-//   5. Preencher no .env do backend:
-//        MELHOR_ENVIO_CLIENT_ID=o_client_id
-//        MELHOR_ENVIO_CLIENT_SECRET=o_secret
+// FORMA 1 — Token de Acesso Direto (a mais simples, recomendada)
+//   1. No painel do Melhor Envio: "Integrações" → "Permissões de acesso"
+//   2. Gera um token ali (não precisa de Client ID/Secret nem de nenhum
+//      processo de "Conectar")
+//   3. Preenche no .env do backend:
+//        MELHOR_ENVIO_ACCESS_TOKEN=o_token_gerado
 //        MELHOR_ENVIO_CEP_ORIGEM=00000000 (CEP de onde a loja despacha)
-//   6. Reiniciar o backend, entrar no painel admin, aba "Frete", e clicar
-//      em "Conectar com Melhor Envio" pra autorizar de fato.
+//   4. Pronto — não precisa clicar em nada no painel admin, já funciona.
 //
-// Enquanto isso não for feito, o site roda em MODO SIMULADO: frete grátis
-// (o padrão atual da loja), sem cálculo nenhum.
+// FORMA 2 — OAuth2 (mais complexa, só como alternativa)
+//   1. Cria um aplicativo em "Integrações" → "Área Dev." → "Cadastrar aplicativo"
+//   2. Preenche MELHOR_ENVIO_CLIENT_ID e MELHOR_ENVIO_CLIENT_SECRET no .env
+//   3. Entra no painel admin, aba "Frete", clica em "Conectar com Melhor Envio"
+//
+// Se as duas estiverem configuradas ao mesmo tempo, o Token de Acesso
+// Direto tem prioridade (é o caminho mais simples e confiável).
+//
+// Enquanto nenhuma das duas estiver configurada, o site roda em MODO
+// SIMULADO: frete grátis (o padrão atual da loja), sem cálculo nenhum.
 
 // .trim() é uma proteção extra: é comum, ao copiar uma chave longa de uma
 // página, vir junto um espaço ou quebra de linha invisível no início/fim
 // sem a pessoa perceber — o que faz o Melhor Envio recusar a credencial
 // por não bater 100% igual, mesmo "parecendo" certa visualmente.
+const ACCESS_TOKEN_DIRETO = (process.env.MELHOR_ENVIO_ACCESS_TOKEN || '').trim();
 const CLIENT_ID = (process.env.MELHOR_ENVIO_CLIENT_ID || '').trim();
 const CLIENT_SECRET = (process.env.MELHOR_ENVIO_CLIENT_SECRET || '').trim();
 const CEP_ORIGEM = (process.env.MELHOR_ENVIO_CEP_ORIGEM || '').trim();
@@ -70,11 +67,14 @@ function obterRedirectUri() {
   return `${backendUrlLimpo}/api/frete/melhor-envio/callback`;
 }
 
+// Configurado se: (token direto + CEP) OU (as credenciais OAuth completas).
 const MELHOR_ENVIO_CONFIGURADO = Boolean(
-  CLIENT_ID && CLIENT_SECRET && CEP_ORIGEM && obterRedirectUri()
+  (ACCESS_TOKEN_DIRETO && CEP_ORIGEM) ||
+  (CLIENT_ID && CLIENT_SECRET && CEP_ORIGEM && obterRedirectUri())
 );
 
 module.exports = {
+  ACCESS_TOKEN_DIRETO,
   CLIENT_ID,
   CLIENT_SECRET,
   CEP_ORIGEM,

@@ -130,6 +130,17 @@ async function renovarToken(refreshToken) {
 }
 
 async function obterTokenValido() {
+  // Caminho mais simples: um "Token de Acesso Direto" gerado direto no
+  // painel do Melhor Envio (Integrações → Permissões de acesso) — não
+  // precisa de nenhum processo de "Conectar"/OAuth, é só usar esse token
+  // fixo. Se estiver configurado, usamos ele e nem olhamos pro OAuth.
+  const tokenDireto = (process.env.MELHOR_ENVIO_ACCESS_TOKEN || '').trim();
+  if (tokenDireto) {
+    return tokenDireto;
+  }
+
+  // Caminho OAuth (só entra aqui se o token direto acima não estiver
+  // configurado) — depende do admin ter clicado em "Conectar" no painel.
   const [rows] = await pool.query(
     'SELECT access_token, refresh_token, expira_em FROM melhor_envio_conexao ORDER BY id DESC LIMIT 1'
   );
@@ -149,6 +160,11 @@ async function obterTokenValido() {
 }
 
 async function obterStatusConexao() {
+  const { ACCESS_TOKEN_DIRETO } = require('../config/melhorEnvio');
+  if (ACCESS_TOKEN_DIRETO) {
+    return { conectado: true, viaTokenDireto: true };
+  }
+
   const [rows] = await pool.query(
     'SELECT expira_em, atualizado_em FROM melhor_envio_conexao ORDER BY id DESC LIMIT 1'
   );

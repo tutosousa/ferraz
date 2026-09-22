@@ -114,9 +114,11 @@ app.listen(PORT, async () => {
     console.log('💳 Mercado Pago NÃO configurado — checkout rodando em modo simulado (aprova na hora, sem cobrança real).');
   }
 
-  const { MELHOR_ENVIO_CONFIGURADO, CLIENT_ID: ME_CLIENT_ID, obterRedirectUri } = require('./config/melhorEnvio');
-  if (MELHOR_ENVIO_CONFIGURADO) {
-    console.log(`📦 Melhor Envio configurado (Client ID: ${ME_CLIENT_ID.length} caracteres)`);
+  const { MELHOR_ENVIO_CONFIGURADO, ACCESS_TOKEN_DIRETO, CLIENT_ID: ME_CLIENT_ID, obterRedirectUri } = require('./config/melhorEnvio');
+  if (ACCESS_TOKEN_DIRETO) {
+    console.log(`📦 Melhor Envio configurado via Token de Acesso Direto (${ACCESS_TOKEN_DIRETO.length} caracteres) — não precisa de OAuth.`);
+  } else if (MELHOR_ENVIO_CONFIGURADO) {
+    console.log(`📦 Melhor Envio configurado via OAuth2 (Client ID: ${ME_CLIENT_ID.length} caracteres)`);
     console.log(`📦 URL de callback usada: ${obterRedirectUri()}`);
   } else {
     console.log('📦 Melhor Envio NÃO configurado — frete rodando em modo simulado (grátis).');
