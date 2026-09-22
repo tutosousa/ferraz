@@ -1004,7 +1004,11 @@ textarea:focus-visible {
   .conta-texto-completo { display: none; }
   .conta-texto-compacto { display: inline; }
   .nav-link-secundario { padding: 8px 8px; font-size: 0.78rem; }
-  .carrinho-link { padding: 8px 10px; font-size: 0.78rem; }
+  .site-header__acoes .carrinho-link {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    margin-left: auto; /* isola o carrinho no lado direito, separado dos outros links */
+  }
 
   .secao { padding: 28px 0; }
   .produtos-grade { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; }
