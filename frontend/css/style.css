@@ -806,55 +806,58 @@ textarea:focus-visible {
   white-space: nowrap;
   font-size: 0.9rem;
 }
+.banner-promo-atacado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: linear-gradient(120deg, #2f7d70, #5EC5B5 60%, #7fd6c8);
+  border-radius: 12px;
+  padding: 16px 26px;
+  margin: 24px 0;
+  color: #fff;
+  text-decoration: none;
+}
+.banner-promo-atacado:hover {
+  text-decoration: none;
+  filter: brightness(1.03);
+}
+.banner-promo-atacado__tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.banner-promo-atacado__texto h2 {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+.banner-promo-atacado__texto p {
+  color: rgba(255,255,255,0.94);
+  margin: 0;
+  max-width: 520px;
+  font-size: 0.88rem;
+}
+.banner-promo-atacado__botao {
+  flex-shrink: 0;
+  background: #fff;
+  color: var(--cor-primaria-escura);
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: var(--raio);
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
 @media (max-width: 640px) {
   .banner-promo-atacado { padding: 14px 18px; }
   .banner-promo-atacado__texto h2 { font-size: 1.05rem; }
-}
-
-/* ------------------------------ Banner de atacado ------------------------------ */
-.banner-atacado {
-  background: linear-gradient(135deg, #2f7d70, #5EC5B5);
-  color: #fff;
-  padding: 56px 0;
-  text-align: center;
-}
-.banner-atacado h1 {
-  color: #fff;
-  font-size: 2.3rem;
-  margin-bottom: 10px;
-}
-.banner-atacado p {
-  color: rgba(255,255,255,0.92);
-  font-size: 1.15rem;
-  max-width: 600px;
-  margin: 0 auto 20px;
-}
-.banner-atacado__selo {
-  display: inline-block;
-  background: #fff;
-  color: var(--cor-primaria-escura);
-  font-weight: 800;
-  padding: 8px 20px;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  margin-bottom: 18px;
-  letter-spacing: 0.02em;
-}
-.produto-card__preco--atacado {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.produto-card__preco--atacado .preco-de {
-  font-size: 0.85rem;
-  color: var(--cor-texto-suave);
-  text-decoration: line-through;
-  font-weight: 400;
-}
-.produto-card__preco--atacado .preco-por {
-  color: var(--cor-primaria-escura);
-  font-size: 1.2rem;
-  font-weight: 800;
 }
 
 /* ------------------------------- Galeria de fotos ------------------------------- */
