@@ -334,17 +334,17 @@ textarea:focus-visible {
 /* -------------------------------- Hero ----------------------------------- */
 .hero {
   background: var(--cor-primaria-clara);
-  padding: 56px 0;
+  padding: 36px 0;
   border-bottom: 1px solid var(--cor-linha);
 }
 .hero h1 {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   max-width: 640px;
 }
 .hero p {
   max-width: 560px;
   color: var(--cor-texto-suave);
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 /* ---------------------------- Grade de produtos --------------------------- */
@@ -815,29 +815,29 @@ textarea:focus-visible {
 .banner-atacado {
   background: linear-gradient(135deg, #2f7d70, #5EC5B5);
   color: #fff;
-  padding: 56px 0;
+  padding: 36px 0;
   text-align: center;
 }
 .banner-atacado h1 {
   color: #fff;
-  font-size: 2.3rem;
-  margin-bottom: 10px;
+  font-size: 1.9rem;
+  margin-bottom: 8px;
 }
 .banner-atacado p {
   color: rgba(255,255,255,0.92);
-  font-size: 1.15rem;
+  font-size: 1rem;
   max-width: 600px;
-  margin: 0 auto 20px;
+  margin: 0 auto 16px;
 }
 .banner-atacado__selo {
   display: inline-block;
   background: #fff;
   color: var(--cor-primaria-escura);
   font-weight: 800;
-  padding: 8px 20px;
+  padding: 6px 18px;
   border-radius: 999px;
-  font-size: 0.95rem;
-  margin-bottom: 18px;
+  font-size: 0.88rem;
+  margin-bottom: 14px;
   letter-spacing: 0.02em;
 }
 .produto-card__preco--atacado {
@@ -984,9 +984,9 @@ textarea:focus-visible {
 @media (max-width: 640px) {
   body { font-size: 16px; }
   h1 { font-size: 1.6rem; }
-  .hero, .banner-atacado { padding: 36px 0; }
-  .hero h1, .banner-atacado h1 { font-size: 1.7rem; }
-  .hero p, .banner-atacado p { font-size: 1rem; }
+  .hero, .banner-atacado { padding: 26px 0; }
+  .hero h1, .banner-atacado h1 { font-size: 1.5rem; }
+  .hero p, .banner-atacado p { font-size: 0.92rem; }
 
   .site-header__top {
     padding: 12px 0;
