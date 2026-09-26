@@ -52,11 +52,11 @@
           <thead>
             <tr>
               <th>Nº do pedido</th><th>Cliente</th><th>Cidade/UF</th>
-              <th>Total</th><th>Status</th><th>Data</th><th>Atualizar status</th><th>Comprovante</th>
+              <th>Total</th><th>Status</th><th>Data</th><th>Atualizar status</th><th>Comprovante</th><th>Excluir</th>
             </tr>
           </thead>
           <tbody id="tabela-pedidos">
-            <tr><td colspan="8">Carregando...</td></tr>
+            <tr><td colspan="9">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -86,7 +86,7 @@ async function carregarPedidos() {
     const pedidos = await apiFetchAdmin(`/pedidos/admin/all${query}`);
 
     if (pedidos.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8">Nenhum pedido encontrado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9">Nenhum pedido encontrado.</td></tr>`;
       return;
     }
 
@@ -106,14 +106,41 @@ async function carregarPedidos() {
         <td>
           <a href="imprimir-pedido.html?id=${p.id}" target="_blank" class="link-acao">🖨️ Imprimir</a>
         </td>
+        <td>
+          ${p.status === 'entregue' || p.status === 'cancelado'
+            ? `<button type="button" class="link-acao link-acao--perigo" data-apagar="${p.id}" data-status="${p.status}">Apagar</button>`
+            : ''
+          }
+        </td>
       </tr>
     `).join('');
 
     tbody.querySelectorAll('.select-status').forEach((select) => {
       select.addEventListener('change', () => atualizarStatus(select.dataset.id, select.value));
     });
+
+    tbody.querySelectorAll('[data-apagar]').forEach((btn) => {
+      btn.addEventListener('click', () => apagarPedido(btn.dataset.apagar, btn.dataset.status));
+    });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+async function apagarPedido(id, status) {
+  const avisoFinanceiro = status === 'entregue'
+    ? '\n\n⚠️ Esse pedido já foi pago — apagar ele também remove esse valor do relatório financeiro (Faturamento/Lucro) do dashboard.'
+    : '';
+  if (!confirm(`Tem certeza que deseja apagar este pedido? Essa ação não pode ser desfeita.${avisoFinanceiro}`)) return;
+
+  const alertaEl = document.getElementById('alerta-pedidos');
+  try {
+    await apiFetchAdmin(`/pedidos/admin/${id}`, { method: 'DELETE' });
+    alertaEl.innerHTML = `<div class="alerta alerta-sucesso">Pedido apagado com sucesso.</div>`;
+    setTimeout(() => (alertaEl.innerHTML = ''), 2500);
+    carregarPedidos();
+  } catch (err) {
+    alertaEl.innerHTML = `<div class="alerta alerta-erro">${escapeHtml(err.message)}</div>`;
   }
 }
 
