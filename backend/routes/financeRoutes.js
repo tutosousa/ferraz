@@ -8,6 +8,7 @@ const {
   listLancamentos,
   createLancamento,
   deleteLancamento,
+  clearAllLancamentos,
 } = require('../controllers/financeController');
 
 // Todas as rotas financeiras exigem login de admin
@@ -19,6 +20,7 @@ router.get('/mensal', getMonthlyReport);
 
 router.get('/lancamentos', listLancamentos);
 router.post('/lancamentos', createLancamento);
+router.delete('/lancamentos/limpar-tudo', clearAllLancamentos);
 router.delete('/lancamentos/:id', deleteLancamento);
 
 module.exports = router;
