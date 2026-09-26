@@ -453,6 +453,34 @@ async function updateOrderStatus(req, res, next) {
   }
 }
 
+// Apaga um pedido de vez do banco — só é permitido pra pedidos já
+// "fechados" (Entregue ou Cancelado). Pedidos ativos/pendentes NUNCA
+// podem ser apagados por aqui, só pra evitar perder um pedido em
+// andamento por engano. Os itens do pedido somem juntos automaticamente
+// (o banco já está configurado com ON DELETE CASCADE nessa relação).
+async function deleteOrder(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const [pedidos] = await pool.query('SELECT status FROM pedidos WHERE id = ?', [id]);
+    if (pedidos.length === 0) {
+      return res.status(404).json({ error: 'Pedido não encontrado.' });
+    }
+
+    const status = pedidos[0].status;
+    if (status !== 'entregue' && status !== 'cancelado') {
+      return res.status(400).json({
+        error: 'Só é possível excluir pedidos com status "Entregue" ou "Cancelado". Mude o status do pedido antes de tentar excluir.',
+      });
+    }
+
+    await pool.query('DELETE FROM pedidos WHERE id = ?', [id]);
+    res.json({ message: 'Pedido excluído com sucesso.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getShippingQuote,
   listNewOrders,
@@ -461,4 +489,5 @@ module.exports = {
   listOrders,
   getOrderById,
   updateOrderStatus,
+  deleteOrder,
 };
