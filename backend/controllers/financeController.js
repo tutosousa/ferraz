@@ -144,6 +144,19 @@ async function deleteLancamento(req, res, next) {
   }
 }
 
+// Apaga TODOS os lançamentos manuais de uma vez — usado quando o dono
+// quer "zerar" o financeiro (ex: antes de entregar o site pra um cliente
+// novo, limpando dados de teste). Não afeta os pedidos em si, só os
+// lançamentos manuais (despesas/receitas extras cadastradas à parte).
+async function clearAllLancamentos(req, res, next) {
+  try {
+    const [resultado] = await pool.query('DELETE FROM financeiro_lancamentos');
+    res.json({ message: `${resultado.affectedRows} lançamento(s) removido(s).`, quantidade: resultado.affectedRows });
+  } catch (err) {
+    next(err);
+  }
+}
+
 function defaultInicio() {
   const d = new Date();
   d.setDate(d.getDate() - 30);
@@ -165,4 +178,5 @@ module.exports = {
   listLancamentos,
   createLancamento,
   deleteLancamento,
+  clearAllLancamentos,
 };
