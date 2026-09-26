@@ -398,7 +398,7 @@ async function listOrders(req, res, next) {
     const params = [];
 
     if (status) {
-      // Filtro explícito por um status específico (inclusive "enviado" ou
+      // Filtro explícito por um status específico (inclusive "entregue" ou
       // "cancelado") — o admin ainda consegue ver esses pedidos quando
       // escolhe isso de propósito no filtro, só não aparecem mais juntos
       // com os pedidos ativos por padrão.
@@ -406,9 +406,9 @@ async function listOrders(req, res, next) {
       params.push(status);
     } else {
       // Lista principal (sem filtro escolhido): mostra só pedidos que
-      // ainda precisam de alguma ação — "enviado" e "cancelado" saem
+      // ainda precisam de alguma ação — "entregue" e "cancelado" saem
       // daqui, porque já não precisam de mais nada do admin.
-      sql += " WHERE status NOT IN ('enviado', 'cancelado')";
+      sql += " WHERE status NOT IN ('entregue', 'cancelado')";
     }
     sql += ' ORDER BY criado_em DESC';
 
