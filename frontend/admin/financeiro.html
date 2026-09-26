@@ -77,7 +77,10 @@
     <div class="admin-painel">
       <div class="admin-painel__cabecalho">
         <h3 style="margin:0;">Lançamentos manuais (despesas e receitas extras)</h3>
-        <button class="btn btn-secundario" id="btn-novo-lancamento">+ Novo lançamento</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-secundario" id="btn-novo-lancamento">+ Novo lançamento</button>
+          <button class="btn btn-secundario" id="btn-limpar-tudo" style="color:var(--cor-erro); border-color:var(--cor-erro);">Limpar tudo</button>
+        </div>
       </div>
       <div style="overflow-x:auto;">
         <table class="tabela-admin">
@@ -245,6 +248,22 @@ async function removerLancamento(id) {
     alert(err.message);
   }
 }
+
+async function limparTodosLancamentos() {
+  if (!confirm('Isso vai apagar TODOS os lançamentos manuais (despesas e receitas extras) de uma vez. Essa ação não pode ser desfeita. Tem certeza?')) return;
+  if (!confirm('Confirma de novo: tem certeza mesmo que quer apagar tudo?')) return;
+
+  try {
+    const resultado = await apiFetchAdmin('/financeiro/lancamentos/limpar-tudo', { method: 'DELETE' });
+    alert(resultado.message);
+    carregarLancamentos();
+    carregarResumo();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById('btn-limpar-tudo').addEventListener('click', limparTodosLancamentos);
 
 document.getElementById('btn-filtrar').addEventListener('click', carregarResumo);
 
