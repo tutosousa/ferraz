@@ -10,6 +10,7 @@ const {
   listOrders,
   getOrderById,
   updateOrderStatus,
+  deleteOrder,
 } = require('../controllers/orderController');
 
 router.post('/frete', getShippingQuote);
@@ -24,5 +25,6 @@ router.get('/admin/novos', requireAdminAuth, listNewOrders);
 router.get('/admin/all', requireAdminAuth, listOrders);
 router.get('/admin/:id', requireAdminAuth, getOrderById);
 router.patch('/admin/:id/status', requireAdminAuth, updateOrderStatus);
+router.delete('/admin/:id', requireAdminAuth, deleteOrder);
 
 module.exports = router;
