@@ -9,7 +9,7 @@
 const BACKEND_ORIGIN = 'https://ferraz-1.onrender.com';
 const API_BASE_URL = `${BACKEND_ORIGIN}/api`;
 
-/**
+/**ç
  * Wrapper simples para chamadas fetch à API.
  * Lança um erro com a mensagem vinda do backend quando a resposta não é OK.
  */
